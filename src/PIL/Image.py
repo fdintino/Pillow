@@ -1375,7 +1375,7 @@ class Image:
 
         # XMP tags
         if 0x0112 not in self._exif:
-            xmp_tags = self.info.get("XML:com.adobe.xmp")
+            xmp_tags = self.info.get("XML:com.adobe.xmp") or self.info.get("xmp")
             if xmp_tags:
                 match = re.search(r'tiff:Orientation="([0-9])"', xmp_tags)
                 if match:
