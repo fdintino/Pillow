@@ -19,12 +19,11 @@ fi
 
 set -e
 
-if [[ $(uname) != CYGWIN* ]]; then
-    sudo apt-get -qq install libfreetype6-dev liblcms2-dev python3-tk\
-                             ghostscript libffi-dev libjpeg-turbo-progs libopenjp2-7-dev\
-                             cmake meson imagemagick libharfbuzz-dev libfribidi-dev\
-                             sway wl-clipboard libopenblas-dev
-fi
+sudo apt-get -qq install libfreetype6-dev liblcms2-dev python3-tk\
+                         ghostscript libffi-dev libjpeg-turbo-progs libopenjp2-7-dev\
+                         cmake meson imagemagick libharfbuzz-dev libfribidi-dev\
+                         sway wl-clipboard libopenblas-dev\
+                         ninja-build build-essential nasm
 
 python3 -m pip install --upgrade pip
 python3 -m pip install --upgrade wheel
@@ -54,6 +53,9 @@ if [[ $(uname) != CYGWIN* ]]; then
 
     # raqm
     pushd depends && ./install_raqm.sh && popd
+
+    # libavif
+    pushd depends && ./install_libavif.sh && popd
 
     # extra test images
     pushd depends && ./install_extra_test_images.sh && popd

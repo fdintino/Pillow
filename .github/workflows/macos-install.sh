@@ -2,8 +2,7 @@
 
 set -e
 
-brew install libtiff libjpeg openjpeg libimagequant webp little-cms2 freetype libraqm
-export PKG_CONFIG_PATH="/usr/local/opt/openblas/lib/pkgconfig"
+brew install libtiff libjpeg openjpeg libimagequant webp little-cms2 freetype openblas libraqm dav1d aom rav1e
 
 PYTHONOPTIMIZE=0 python3 -m pip install cffi
 python3 -m pip install coverage
@@ -15,6 +14,9 @@ python3 -m pip install -U pytest-timeout
 python3 -m pip install pyroma
 
 python3 -m pip install numpy
+
+# libavif
+pushd depends && ./install_libavif.sh && popd
 
 # extra test images
 pushd depends && ./install_extra_test_images.sh && popd
