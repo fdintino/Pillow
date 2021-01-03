@@ -47,6 +47,7 @@ jobs:
             ghostscript
             ImageMagick
             jpeg
+            libaom-devel
             libfreetype-devel
             libimagequant-devel
             libjpeg-devel
@@ -58,8 +59,11 @@ jobs:
             libwebp-devel
             libxcb-devel
             libxcb-xinerama0
+            cmake
             make
+            sudo
             netpbm
+            patch
             perl
             python3${{ matrix.python-minor-version }}-cffi
             python3${{ matrix.python-minor-version }}-cython
