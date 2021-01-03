@@ -1346,7 +1346,7 @@ class Image:
 
         # XMP tags
         if 0x0112 not in self._exif:
-            xmp_tags = self.info.get("XML:com.adobe.xmp")
+            xmp_tags = self.info.get("XML:com.adobe.xmp") or self.info.get("xmp")
             if xmp_tags:
                 root = xml.etree.ElementTree.fromstring(xmp_tags)
                 for elem in root.iter():

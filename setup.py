@@ -289,6 +289,7 @@ class pil_build_ext(build_ext):
             "jpeg2000",
             "imagequant",
             "xcb",
+            "avif",
         ]
 
         required = {"jpeg", "zlib"}
@@ -782,6 +783,12 @@ class pil_build_ext(build_ext):
                 if _find_library_file(self, "xcb"):
                     feature.xcb = "xcb"
 
+        if feature.want("avif"):
+            _dbg("Looking for avif")
+            if _find_include_file(self, "avif/avif.h"):
+                if _find_library_file(self, "avif"):
+                    feature.avif = "avif"
+
         for f in feature:
             if not getattr(feature, f) and feature.require(f):
                 if f in ("jpeg", "zlib"):
@@ -880,6 +887,13 @@ class pil_build_ext(build_ext):
         else:
             self._remove_extension("PIL._webp")
 
+        if feature.avif:
+            libs = [feature.avif]
+            defs = []
+            self._update_extension("PIL._avif", libs, defs)
+        else:
+            self._remove_extension("PIL._avif")
+
         tk_libs = ["psapi"] if sys.platform == "win32" else []
         self._update_extension("PIL._imagingtk", tk_libs)
 
@@ -920,6 +934,7 @@ class pil_build_ext(build_ext):
             (feature.webp, "WEBP"),
             (feature.webpmux, "WEBPMUX"),
             (feature.xcb, "XCB (X protocol)"),
+            (feature.avif, "LIBAVIF"),
         ]
 
         all = 1
@@ -962,6 +977,7 @@ ext_modules = [
     Extension("PIL._imagingft", ["src/_imagingft.c"]),
     Extension("PIL._imagingcms", ["src/_imagingcms.c"]),
     Extension("PIL._webp", ["src/_webp.c"]),
+    Extension("PIL._avif", ["src/_avif.c"]),
     Extension("PIL._imagingtk", ["src/_imagingtk.c", "src/Tk/tkImaging.c"]),
     Extension("PIL._imagingmath", ["src/_imagingmath.c"]),
     Extension("PIL._imagingmorph", ["src/_imagingmorph.c"]),
