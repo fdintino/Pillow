@@ -398,6 +398,47 @@ DEPS = {
         ],
         "bins": [r"*.dll"],
     },
+    "rav1e": {
+        "url": (
+            "https://github.com/xiph/rav1e/releases/download/v0.6.6/"
+            "rav1e-0.6.6-windows-msvc-generic.zip"
+        ),
+        "filename": "rav1e-0.6.6-windows-msvc-generic.zip",
+        "dir": "rav1e-windows-msvc-sdk",
+        "license": [],
+        "build": [
+            cmd_xcopy("include", "{inc_dir}"),
+        ],
+        "bins": [r"bin\*.dll"],
+        "libs": [r"lib\*.*"],
+    },
+    "libavif": {
+        "url": (
+            "https://github.com/AOMediaCodec/libavif/archive/"
+            "f9625fc16e29535a0c822108841d30f1b41ce562.zip"
+        ),
+        "filename": "libavif-f9625fc16e29535a0c822108841d30f1b41ce562.zip",
+        "dir": "libavif-f9625fc16e29535a0c822108841d30f1b41ce562",
+        "license": "LICENSE",
+        "build": [
+            cmd_cd("ext"),
+            cmd_rmdir("dav1d"),
+            'cmd.exe /c "dav1d.cmd"',
+            cmd_rmdir("libyuv"),
+            'cmd.exe /c "libyuv.cmd"',
+            cmd_cd(".."),
+            *cmds_cmake(
+                "avif",
+                "-DBUILD_SHARED_LIBS=OFF",
+                "-DAVIF_LOCAL_LIBYUV=ON",
+                "-DAVIF_CODEC_RAV1E=ON",
+                "-DAVIF_CODEC_DAV1D=ON",
+                "-DAVIF_LOCAL_DAV1D=ON",
+            ),
+            cmd_xcopy("include", "{inc_dir}"),
+        ],
+        "libs": [r"avif.lib"],
+    },
 }
 
 
@@ -584,10 +625,11 @@ def build_dep(name: str, prefs: dict[str, str], verbose: bool) -> str:
     if "license_pattern" in dep:
         match = re.search(dep["license_pattern"], license_text, re.DOTALL)
         license_text = "\n".join(match.groups())
-    assert len(license_text) > 50
-    with open(os.path.join(license_dir, f"{directory}.txt"), "w") as f:
-        print(f"Writing license {directory}.txt")
-        f.write(license_text)
+    if licenses:
+        assert len(license_text) > 50
+        with open(os.path.join(license_dir, f"{directory}.txt"), "w") as f:
+            print(f"Writing license {directory}.txt")
+            f.write(license_text)
 
     for patch_file, patch_list in dep.get("patch", {}).items():
         patch_file = os.path.join(sources_dir, directory, patch_file.format(**prefs))
@@ -699,6 +741,11 @@ def main() -> None:
         action="store_true",
         help="skip LGPL-licensed optional dependency FriBiDi",
     )
+    parser.add_argument(
+        "--no-avif",
+        action="store_true",
+        help="skip optional dependency libavif",
+    )
     args = parser.parse_args()
 
     arch_prefs = ARCHITECTURES[args.architecture]
@@ -739,6 +786,8 @@ def main() -> None:
         disabled += ["libimagequant"]
     if args.no_fribidi:
         disabled += ["fribidi"]
+    if args.no_avif or args.architecture != "x64":
+        disabled += ["rav1e", "libavif"]
 
     prefs = {
         "architecture": args.architecture,

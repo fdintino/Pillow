@@ -16,6 +16,7 @@ modules = {
     "freetype2": ("PIL._imagingft", "freetype2_version"),
     "littlecms2": ("PIL._imagingcms", "littlecms_version"),
     "webp": ("PIL._webp", "webpdecoder_version"),
+    "avif": ("PIL._avif", "libavif_version"),
 }
 
 
@@ -271,6 +272,7 @@ def pilinfo(out: IO[str] | None = None, supported_formats: bool = True) -> None:
         ("freetype2", "FREETYPE2"),
         ("littlecms2", "LITTLECMS2"),
         ("webp", "WEBP"),
+        ("avif", "AVIF"),
         ("transp_webp", "WEBP Transparency"),
         ("webp_mux", "WEBPMUX"),
         ("webp_anim", "WEBP Animation"),
