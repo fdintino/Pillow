@@ -71,6 +71,8 @@ jobs:
         7z x winbuild\depends\nasm-2.14.02-win64.zip "-o$env:RUNNER_WORKSPACE\"
         echo "$env:RUNNER_WORKSPACE\nasm-2.14.02" >> $env:GITHUB_PATH
 
+        python -m pip install meson
+
         winbuild\depends\gs9533w32.exe /S
         echo "C:\Program Files (x86)\gs\gs9.53.3\bin" >> $env:GITHUB_PATH
 
@@ -141,6 +143,10 @@ jobs:
     - name: Build dependencies / FriBidi
       if: steps.build-cache.outputs.cache-hit != 'true'
       run: "& winbuild\\build\\build_dep_fribidi.cmd"
+
+    - name: Build dependencies / libavif
+      if: steps.build-cache.outputs.cache-hit != 'true' && matrix.architecture == 'x64'
+      run: "& winbuild\\build\\build_dep_libavif.cmd"
 
     # trim ~150MB x 9
     - name: Optimize build cache
