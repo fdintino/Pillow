@@ -38,6 +38,11 @@ def cmd_rmdir(path: str) -> str:
     return f'rmdir /S /Q "{path}"'
 
 
+def cmd_lib_combine(outfile: str, *libfiles) -> str:
+    params = " ".join(['"%s"' % f for f in libfiles])
+    return "LIB.EXE /OUT:{outfile} {params}".format(outfile=outfile, params=params)
+
+
 def cmd_nmake(
     makefile: str | None = None,
     target: str = "",
@@ -365,6 +370,57 @@ DEPS = {
         ],
         "bins": [r"*.dll"],
     },
+    "rav1e": {
+        "url": (
+            "https://github.com/xiph/rav1e/releases/download/v0.6.6/"
+            "rav1e-0.6.6-windows-msvc-generic.zip"
+        ),
+        "filename": "rav1e-0.6.6-windows-msvc-generic.zip",
+        "dir": "rav1e-windows-msvc-sdk",
+        "license": [],
+        "build": [
+            cmd_xcopy("include", "{inc_dir}"),
+            cmd_copy(r"lib\pkgconfig\rav1e.pc", r"{lib_dir}\pkgconfig"),
+        ],
+        "bins": [r"bin\*.dll"],
+        "libs": [r"lib\*.*"],
+    },
+    "libavif": {
+        "url": "https://github.com/AOMediaCodec/libavif/archive/v1.0.1.zip",
+        "filename": "libavif-1.0.1.zip",
+        "dir": "libavif-1.0.1",
+        "license": "LICENSE",
+        "build": [
+            cmd_cd("ext"),
+            cmd_rmdir("dav1d"),
+            'cmd.exe /c "dav1d.cmd"',
+            cmd_cd(".."),
+            *cmds_cmake(
+                "avif",
+                "-DBUILD_SHARED_LIBS=OFF",
+                "-DAVIF_CODEC_RAV1E=ON",
+                "-DAVIF_CODEC_DAV1D=ON",
+                "-DAVIF_LOCAL_DAV1D=ON",
+            ),
+            cmd_lib_combine(
+                r"avif_combined.lib",
+                r"avif.lib",
+                r"{lib_dir}\rav1e.lib",
+                r"ws2_32.lib",
+                r"advapi32.lib",
+                r"legacy_stdio_definitions.lib",
+                r"msvcrt.lib",
+                r"bcrypt.lib",
+                r"userenv.lib",
+                r"ntdll.lib",
+                r"ext\dav1d\build\src\libdav1d.a",
+            ),
+            cmd_copy(r"avif_combined.lib", r"avif.lib"),
+            cmd_mkdir(r"{inc_dir}\avif"),
+            cmd_copy(r"include\avif\avif.h", r"{inc_dir}\avif"),
+        ],
+        "libs": [r"avif.lib"],
+    },
 }
 
 
@@ -514,6 +570,8 @@ def build_env() -> None:
         cmd_set("INCLIB", "{lib_dir}"),
         cmd_set("LIB", "{lib_dir}"),
         cmd_append("PATH", "{bin_dir}"),
+        cmd_mkdir(r"{lib_dir}\pkgconfig"),
+        cmd_append("PKG_CONFIG_PATH", r"{lib_dir}\pkgconfig"),
         "call {vcvarsall} {vcvars_arch}",
         cmd_set("DISTUTILS_USE_SDK", "1"),  # use same compiler to build Pillow
         cmd_set("py_vcruntime_redist", "true"),  # always use /MD, never /MT
@@ -540,10 +598,11 @@ def build_dep(name: str) -> str:
     if "license_pattern" in dep:
         match = re.search(dep["license_pattern"], license_text, re.DOTALL)
         license_text = "\n".join(match.groups())
-    assert len(license_text) > 50
-    with open(os.path.join(license_dir, f"{dir}.txt"), "w") as f:
-        print(f"Writing license {dir}.txt")
-        f.write(license_text)
+    if licenses:
+        assert len(license_text) > 50
+        with open(os.path.join(license_dir, f"{dir}.txt"), "w") as f:
+            print(f"Writing license {dir}.txt")
+            f.write(license_text)
 
     for patch_file, patch_list in dep.get("patch", {}).items():
         patch_file = os.path.join(sources_dir, dir, patch_file.format(**prefs))
@@ -651,6 +710,11 @@ if __name__ == "__main__":
         action="store_true",
         help="skip LGPL-licensed optional dependency FriBiDi",
     )
+    parser.add_argument(
+        "--no-avif",
+        action="store_true",
+        help="skip optional dependency libavif",
+    )
     args = parser.parse_args()
 
     arch_prefs = ARCHITECTURES[args.architecture]
@@ -691,6 +755,8 @@ if __name__ == "__main__":
         disabled += ["libimagequant"]
     if args.no_fribidi:
         disabled += ["fribidi"]
+    if args.no_avif:
+        disabled += ["libavif"]
 
     prefs = {
         "architecture": args.architecture,
