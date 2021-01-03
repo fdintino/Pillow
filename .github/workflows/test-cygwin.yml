@@ -58,8 +58,12 @@ jobs:
             libwebp-devel
             libxcb-devel
             libxcb-xinerama0
+            git
+            cmake
+            ninja
             make
             netpbm
+            patch
             perl
             python3${{ matrix.python-minor-version }}-cffi
             python3${{ matrix.python-minor-version }}-cython

@@ -38,6 +38,11 @@ def cmd_rmdir(path: str) -> str:
     return f'rmdir /S /Q "{path}"'
 
 
+def cmd_lib_combine(outfile: str, *libfiles) -> str:
+    params = " ".join(['"%s"' % f for f in libfiles])
+    return "LIB.EXE /OUT:{outfile} {params}".format(outfile=outfile, params=params)
+
+
 def cmd_nmake(
     makefile: str | None = None,
     target: str = "",
@@ -365,6 +370,39 @@ DEPS = {
         ],
         "bins": [r"*.dll"],
     },
+    "libavif": {
+        "url": "https://github.com/AOMediaCodec/libavif/archive/v1.0.1.zip",
+        "filename": "libavif-1.0.1.zip",
+        "dir": "libavif-1.0.1",
+        "license": "LICENSE",
+        "build": [
+            cmd_cd("ext"),
+            cmd_rmdir("aom"),
+            'cmd.exe /c "aom.cmd"',
+            cmd_rmdir("dav1d"),
+            'cmd.exe /c "dav1d.cmd"',
+            cmd_cd(".."),
+            *cmds_cmake(
+                "avif",
+                "-DBUILD_SHARED_LIBS=OFF",
+                "-DAVIF_CODEC_AOM=ON",
+                "-DAVIF_LOCAL_AOM=ON",
+                "-DAVIF_CODEC_DAV1D=ON",
+                "-DAVIF_LOCAL_DAV1D=ON",
+            ),
+            cmd_nmake(),
+            cmd_lib_combine(
+                r"avif_combined.lib",
+                r"avif.lib",
+                r"ext\aom\build.libavif\aom.lib",
+                r"ext\dav1d\build\src\libdav1d.a",
+            ),
+            cmd_copy(r"avif_combined.lib", r"avif.lib"),
+            cmd_mkdir(r"{inc_dir}\avif"),
+            cmd_copy(r"include\avif\avif.h", r"{inc_dir}\avif"),
+        ],
+        "libs": [r"avif.lib"],
+    },
 }
 
 
@@ -651,6 +689,11 @@ if __name__ == "__main__":
         action="store_true",
         help="skip LGPL-licensed optional dependency FriBiDi",
     )
+    parser.add_argument(
+        "--no-avif",
+        action="store_true",
+        help="skip optional dependency libavif",
+    )
     args = parser.parse_args()
 
     arch_prefs = ARCHITECTURES[args.architecture]
@@ -691,6 +734,8 @@ if __name__ == "__main__":
         disabled += ["libimagequant"]
     if args.no_fribidi:
         disabled += ["fribidi"]
+    if args.no_avif:
+        disabled += ["libavif"]
 
     prefs = {
         "architecture": args.architecture,
