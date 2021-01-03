@@ -54,6 +54,7 @@ jobs:
             liblcms2-devel
             libopenjp2-devel
             libraqm-devel
+            libavif-devel
             libtiff-devel
             libwebp-devel
             libxcb-devel
