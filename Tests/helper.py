@@ -2,6 +2,7 @@
 Helper functions.
 """
 
+import gc
 import logging
 import os
 import shutil
@@ -206,6 +207,7 @@ class PillowLeakTestCase:
         start_mem = self._get_mem_usage()
         for cycle in range(self.iterations):
             core()
+            gc.collect()
             mem = self._get_mem_usage() - start_mem
             msg = f"memory usage limit exceeded in iteration {cycle}"
             assert mem < self.mem_limit, msg
