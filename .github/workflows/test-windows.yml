@@ -256,6 +256,7 @@ jobs:
               ${{ matrix.package }}-freetype \
               ${{ matrix.package }}-ghostscript \
               ${{ matrix.package }}-lcms2 \
+              ${{ matrix.package }}-libavif \
               ${{ matrix.package }}-libimagequant \
               ${{ matrix.package }}-libjpeg-turbo \
               ${{ matrix.package }}-libraqm \
