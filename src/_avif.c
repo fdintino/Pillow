@@ -487,7 +487,7 @@ AvifDecoderNew(PyObject *self_, PyObject *args) {
     memcpy(self->data, avif_bytes, size);
 
     self->decoder = avifDecoderCreate();
-#if AVIF_VERSION > 80400
+#if AVIF_VERSION >= 80400
     self->decoder->maxThreads = max_threads;
 #endif
     self->decoder->codecChoice = codec;
