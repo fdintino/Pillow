@@ -1,5 +1,6 @@
 import os
 import re
+import xml.etree.ElementTree
 from contextlib import contextmanager
 from io import BytesIO
 
@@ -26,6 +27,19 @@ except ImportError:
 
 
 TEST_AVIF_FILE = "Tests/images/avif/hopper.avif"
+
+
+def assert_xmp_orientation(xmp, expected):
+    assert isinstance(xmp, bytes)
+    root = xml.etree.ElementTree.fromstring(xmp)
+    orientation = None
+    for elem in root.iter():
+        if elem.tag.endswith("}Description"):
+            orientation = elem.attrib.get("{http://ns.adobe.com/tiff/1.0/}Orientation")
+            if orientation:
+                orientation = int(orientation)
+                break
+    assert orientation == expected
 
 
 def roundtrip(im, **options):
@@ -240,7 +254,18 @@ class TestFileAvif:
             exif = reloaded.getexif()
         assert exif[274] == 1
 
-    def test_exif_argument(self, tmp_path):
+    def test_exif_obj_argument(self, tmp_path):
+        exif = Image.Exif()
+        exif[274] = 1
+        exif_data = exif.tobytes()
+        with Image.open(TEST_AVIF_FILE) as im:
+            test_file = str(tmp_path / "temp.avif")
+            im.save(test_file, exif=exif)
+
+        with Image.open(test_file) as reloaded:
+            assert reloaded.info["exif"] == exif_data
+
+    def test_exif_bytes_argument(self, tmp_path):
         exif = Image.Exif()
         exif[274] = 1
         exif_data = exif.tobytes()
@@ -256,6 +281,51 @@ class TestFileAvif:
             test_file = str(tmp_path / "temp.avif")
             with pytest.raises(ValueError):
                 im.save(test_file, exif=b"invalid")
+
+    def test_xmp(self):
+        with Image.open("Tests/images/avif/xmp_tags_orientation.avif") as im:
+            xmp = im.info.get("xmp")
+        assert_xmp_orientation(xmp, 3)
+
+    def test_xmp_save(self, tmp_path):
+        with Image.open("Tests/images/avif/xmp_tags_orientation.avif") as im:
+            test_file = str(tmp_path / "temp.avif")
+            im.save(test_file)
+
+        with Image.open(test_file) as reloaded:
+            xmp = reloaded.info.get("xmp")
+        assert_xmp_orientation(xmp, 3)
+
+    def test_xmp_save_from_png(self, tmp_path):
+        with Image.open("Tests/images/xmp_tags_orientation.png") as im:
+            test_file = str(tmp_path / "temp.avif")
+            im.save(test_file)
+
+        with Image.open(test_file) as reloaded:
+            xmp = reloaded.info.get("xmp")
+        assert_xmp_orientation(xmp, 3)
+
+    def test_xmp_save_argument(self, tmp_path):
+        xmp_arg = "\n".join(
+            [
+                '<?xpacket begin="" id="W5M0MpCehiHzreSzNTczkc9d"?>',
+                '<x:xmpmeta xmlns:x="adobe:ns:meta/">',
+                ' <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">',
+                '  <rdf:Description rdf:about=""',
+                '    xmlns:tiff="http://ns.adobe.com/tiff/1.0/"',
+                '   tiff:Orientation="1"/>',
+                " </rdf:RDF>",
+                "</x:xmpmeta>",
+                '<?xpacket end="r"?>',
+            ]
+        )
+        with Image.open("Tests/images/avif/hopper.avif") as im:
+            test_file = str(tmp_path / "temp.avif")
+            im.save(test_file, xmp=xmp_arg)
+
+        with Image.open(test_file) as reloaded:
+            xmp = reloaded.info.get("xmp")
+        assert_xmp_orientation(xmp, 1)
 
     def test_tell(self):
         with Image.open(TEST_AVIF_FILE) as im:
@@ -341,6 +411,40 @@ class TestFileAvif:
                     pass
         finally:
             AvifImagePlugin.DECODE_CODEC_CHOICE = "auto"
+
+    @skip_unless_avif_encoder("aom")
+    @skip_unless_feature("avif")
+    def test_encoder_codec_available(self):
+        assert _avif.encoder_codec_available("aom") is True
+
+    def test_encoder_codec_available_bad_params(self):
+        with pytest.raises(TypeError):
+            _avif.encoder_codec_available()
+
+    @skip_unless_avif_encoder("dav1d")
+    @skip_unless_feature("avif")
+    def test_encoder_codec_available_cannot_decode(self):
+        assert _avif.encoder_codec_available("dav1d") is False
+
+    def test_encoder_codec_available_invalid(self):
+        assert _avif.encoder_codec_available("foo") is False
+
+    @skip_unless_avif_decoder("aom")
+    @skip_unless_feature("avif")
+    def test_decoder_codec_available(self):
+        assert _avif.decoder_codec_available("aom") is True
+
+    def test_decoder_codec_available_bad_params(self):
+        with pytest.raises(TypeError):
+            _avif.decoder_codec_available()
+
+    @skip_unless_avif_encoder("rav1e")
+    @skip_unless_feature("avif")
+    def test_decoder_codec_available_cannot_decode(self):
+        assert _avif.decoder_codec_available("rav1e") is False
+
+    def test_decoder_codec_available_invalid(self):
+        assert _avif.decoder_codec_available("foo") is False
 
     @pytest.mark.parametrize("upsampling", ["fastest", "best", "nearest", "bilinear"])
     def test_decoder_upsampling(self, upsampling):
@@ -446,6 +550,13 @@ class TestAvifAnimation:
                 append_images=imGenerator(frames[1:]),
             )
             check(temp_file2)
+
+    def test_sequence_dimension_mismatch_check(self, tmp_path):
+        temp_file = str(tmp_path / "temp.avif")
+        frame1 = Image.new("RGB", (100, 100))
+        frame2 = Image.new("RGB", (150, 150))
+        with pytest.raises(ValueError):
+            frame1.save(temp_file, save_all=True, append_images=[frame2], duration=100)
 
     def test_timestamp_and_duration(self, tmp_path):
         """
