@@ -575,6 +575,7 @@ _decoder_get_frame(AvifDecoderObject *self, PyObject *args) {
     avifDecoder *decoder;
     avifImage *image;
     uint32_t frame_index;
+    uint32_t row_bytes;
 
     decoder = self->decoder;
 
@@ -605,6 +606,13 @@ _decoder_get_frame(AvifDecoderObject *self, PyObject *args) {
     } else {
         rgb.format = AVIF_RGB_FORMAT_RGB;
         rgb.ignoreAlpha = AVIF_TRUE;
+    }
+
+    row_bytes = rgb.width * avifRGBImagePixelSize(&rgb);
+
+    if (rgb.height > PY_SSIZE_T_MAX / row_bytes) {
+        PyErr_SetString(PyExc_MemoryError, "Integer overflow in pixel size");
+        return NULL;
     }
 
     avifRGBImageAllocatePixels(&rgb);
