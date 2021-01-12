@@ -3,6 +3,12 @@
 #include "libImaging/Imaging.h"
 #include "avif/avif.h"
 
+#if AVIF_VERSION < 80300
+#define AVIF_CHROMA_UPSAMPLING_AUTOMATIC AVIF_CHROMA_UPSAMPLING_BILINEAR
+#define AVIF_CHROMA_UPSAMPLING_BEST_QUALITY AVIF_CHROMA_UPSAMPLING_BILINEAR
+#define AVIF_CHROMA_UPSAMPLING_FASTEST AVIF_CHROMA_UPSAMPLING_NEAREST
+#endif
+
 typedef struct {
     avifPixelFormat yuv_format;
     int qmin;
