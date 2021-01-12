@@ -336,7 +336,6 @@ _encoder_add(AvifEncoderObject *self, PyObject *args) {
     }
 
     avifRGBImageAllocatePixels(&rgb);
-    memcpy(rgb.pixels, rgb_bytes, size);
 
     if (rgb.rowBytes * rgb.height != size) {
         PyErr_Format(
@@ -349,6 +348,9 @@ _encoder_add(AvifEncoderObject *self, PyObject *args) {
         avifRGBImageFreePixels(&rgb);
         return NULL;
     }
+
+    // rgb.pixels is safe for writes
+    memcpy(rgb.pixels, rgb_bytes, size);
 
     Py_BEGIN_ALLOW_THREADS
     result = avifImageRGBToYUV(frame, &rgb);
@@ -472,6 +474,9 @@ AvifDecoderNew(PyObject *self_, PyObject *args) {
     }
     self->decoder = NULL;
     self->size = size;
+
+    // We need to allocate storage for the decoder for the lifetime of the object
+    // (avifDecoderSetIOMemory does not copy the data passed into it)
     self->data = PyMem_New(uint8_t, size);
     if (self->data == NULL) {
         PyErr_SetString(PyExc_MemoryError, "PyMem_New() failed");
