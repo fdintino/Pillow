@@ -35,7 +35,7 @@ def cmd_rmdir(path):
 
 
 def cmd_lib_combine(outfile, *libfiles):
-    params = " ".join(libfiles)
+    params = " ".join(['"%s"' % f for f in libfiles])
     return f"LIB.EXE /OUT:{outfile} {params}"
 
 
@@ -309,11 +309,12 @@ deps = {
         "dir": "libavif-0.8.4",
         "build": [
             cmd_cd("ext"),
+            cmd_rmdir("aom"),
             'cmd.exe /c "aom.cmd"',
-            "if errorlevel 1 echo AOM build failed! && exit /B 1",
+            cmd_rmdir("dav1d"),
             'cmd.exe /c "dav1d.cmd"',
-            "if errorlevel 1 echo dav1d build failed! && exit /B 1",
             cmd_cd(".."),
+            cmd_rmdir("build"),
             cmd_mkdir("build"),
             cmd_cd("build"),
             cmd_cmake(
@@ -331,8 +332,8 @@ deps = {
             cmd_lib_combine(
                 r"avif.lib",
                 r"build\avif.lib",
-                r"ext\dav1d\build\src\libdav1d.a",
                 r"ext\aom\build.libavif\aom.lib",
+                r"ext\dav1d\build\src\libdav1d.a",
             ),
             cmd_mkdir(r"{inc_dir}\avif"),
             cmd_copy(r"include\avif\avif.h", r"{inc_dir}\avif"),
@@ -540,6 +541,8 @@ if __name__ == "__main__":
             disabled += ["libimagequant"]
         elif arg == "--no-raqm" or arg == "--no-fribidi":
             disabled += ["fribidi"]
+        elif arg == "--no-avif":
+            disabled += ["libavif"]
         elif arg.startswith("--depends="):
             depends_dir = arg[10:]
         elif arg.startswith("--python="):
