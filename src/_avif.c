@@ -642,7 +642,7 @@ _decoder_get_frame(AvifDecoderObject *self, PyObject *args) {
     avifRGBImageFreePixels(&rgb);
 
     ret = Py_BuildValue(
-        "Siii",
+        "SKKK",
         bytes,
         decoder->timescale,
         decoder->imageTiming.ptsInTimescales,
