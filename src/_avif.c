@@ -333,9 +333,9 @@ PyObject *
 _encoder_add(AvifEncoderObject *self, PyObject *args) {
     uint8_t *rgb_bytes;
     Py_ssize_t size;
-    int duration;
-    int width;
-    int height;
+    unsigned int duration;
+    unsigned int width;
+    unsigned int height;
     char *mode;
     PyObject *is_single_frame = NULL;
     PyObject *ret = Py_None;
@@ -351,7 +351,7 @@ _encoder_add(AvifEncoderObject *self, PyObject *args) {
 
     if (!PyArg_ParseTuple(
             args,
-            "z#iiisO",
+            "z#IIIsO",
             (char **)&rgb_bytes,
             &size,
             &duration,
