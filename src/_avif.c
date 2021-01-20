@@ -27,7 +27,7 @@ typedef struct {
     PyObject_HEAD
     avifEncoder *encoder;
     avifImage *image;
-    avifImage *frame;
+    int frame_index;
 } AvifEncoderObject;
 
 static PyTypeObject AvifEncoder_Type;
@@ -242,7 +242,7 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
         }
 
         self->image = image;
-        self->frame = NULL;
+        self->frame_index = -1;
 
         return (PyObject *)self;
     }
@@ -258,9 +258,6 @@ _encoder_dealloc(AvifEncoderObject *self) {
     if (self->image) {
         avifImageDestroy(self->image);
     }
-    if (self->frame) {
-        avifImageDestroy(self->frame);
-    }
     Py_RETURN_NONE;
 }
 
@@ -273,14 +270,16 @@ _encoder_add(AvifEncoderObject *self, PyObject *args) {
     int height;
     char *mode;
     PyObject *is_single_frame = NULL;
+    PyObject *ret = Py_None;
 
+    int is_first_frame;
     int channels;
     avifRGBImage rgb;
     avifResult result;
 
     avifEncoder *encoder = self->encoder;
     avifImage *image = self->image;
-    avifImage *frame;
+    avifImage *frame = NULL;
 
     if (!PyArg_ParseTuple(
             args,
@@ -295,16 +294,24 @@ _encoder_add(AvifEncoderObject *self, PyObject *args) {
         return NULL;
     }
 
-    if (image->yuvRowBytes[0] == 0) {
+    is_first_frame = (self->frame_index == -1);
+
+    if ((image->width != width) || (image->height != height)) {
+        PyErr_Format(
+            PyExc_ValueError,
+            "Image sequence dimensions mismatch, %ux%u != %ux%u",
+            image->width,
+            image->height,
+            width,
+            height);
+        return NULL;
+    }
+
+    if (is_first_frame) {
         // If we don't have an image populated with yuv planes, this is the first frame
         frame = image;
     } else {
-        if (self->frame) {
-            avifImageDestroy(self->frame);
-        }
-        self->frame = avifImageCreateEmpty();
-
-        frame = self->frame;
+        frame = avifImageCreateEmpty();
 
         frame->colorPrimaries = image->colorPrimaries;
         frame->transferCharacteristics = image->transferCharacteristics;
@@ -316,17 +323,6 @@ _encoder_add(AvifEncoderObject *self, PyObject *args) {
 
     frame->width = width;
     frame->height = height;
-
-    if ((image->width != frame->width) || (image->height != frame->height)) {
-        PyErr_Format(
-            PyExc_ValueError,
-            "Image sequence dimensions mismatch, %ux%u != %ux%u",
-            image->width,
-            image->height,
-            frame->width,
-            frame->height);
-        return NULL;
-    }
 
     memset(&rgb, 0, sizeof(avifRGBImage));
 
@@ -351,8 +347,8 @@ _encoder_add(AvifEncoderObject *self, PyObject *args) {
             rgb.height,
             rgb.rowBytes * rgb.height,
             size);
-        avifRGBImageFreePixels(&rgb);
-        return NULL;
+        ret = NULL;
+        goto end;
     }
 
     // rgb.pixels is safe for writes
@@ -367,8 +363,8 @@ _encoder_add(AvifEncoderObject *self, PyObject *args) {
             exc_type_for_avif_result(result),
             "Conversion to YUV failed: %s",
             avifResultToString(result));
-        avifRGBImageFreePixels(&rgb);
-        return NULL;
+        ret = NULL;
+        goto end;
     }
 
     uint32_t addImageFlags = AVIF_ADD_IMAGE_FLAG_NONE;
@@ -385,13 +381,22 @@ _encoder_add(AvifEncoderObject *self, PyObject *args) {
             exc_type_for_avif_result(result),
             "Failed to encode image: %s",
             avifResultToString(result));
-        avifRGBImageFreePixels(&rgb);
-        return NULL;
+        ret = NULL;
+        goto end;
     }
 
+end:
     avifRGBImageFreePixels(&rgb);
+    if (!is_first_frame) {
+        avifImageDestroy(frame);
+    }
 
-    Py_RETURN_NONE;
+    if (ret == Py_None) {
+        self->frame_index++;
+        Py_RETURN_NONE;
+    } else {
+        return ret;
+    }
 }
 
 PyObject *
