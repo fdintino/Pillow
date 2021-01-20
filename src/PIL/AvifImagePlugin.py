@@ -110,6 +110,9 @@ def _save_all(im, fp, filename):
         exif = exif.tobytes()
     xmp = info.get("xmp", im.info.get("xmp") or im.info.get("XML:com.adobe.xmp"))
 
+    if isinstance(xmp, str):
+        xmp = xmp.encode("utf-8")
+
     # Setup the AVIF encoder
     enc = _avif.AvifEncoder(
         im.size[0],
@@ -122,9 +125,9 @@ def _save_all(im, fp, filename):
         speed,
         codec,
         range_,
-        icc_profile,
-        exif,
-        xmp,
+        icc_profile or b"",
+        exif or b"",
+        xmp or b"",
     )
 
     # Add each frame
