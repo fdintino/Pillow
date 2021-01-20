@@ -20,8 +20,6 @@ typedef struct {
     avifRange range;
 } avifEncOptions;
 
-static int max_threads = 1;
-
 // Encoder type
 typedef struct {
     PyObject_HEAD
@@ -44,6 +42,53 @@ typedef struct {
 } AvifDecoderObject;
 
 static PyTypeObject AvifDecoder_Type;
+
+static int max_threads = 0;
+
+static void
+init_max_threads(void) {
+    PyObject *os = NULL;
+    PyObject *n = NULL;
+    long num_cpus;
+
+    os = PyImport_ImportModule("os");
+    if (os == NULL) {
+        goto error;
+    }
+
+    if (PyObject_HasAttrString(os, "sched_getaffinity")) {
+        n = PyObject_CallMethod(os, "sched_getaffinity", "i", 0);
+        if (n == NULL) {
+            goto error;
+        }
+        num_cpus = PySet_Size(n);
+    } else {
+        n = PyObject_CallMethod(os, "cpu_count", NULL);
+        if (n == NULL) {
+            goto error;
+        }
+        num_cpus = PyLong_AsLong(n);
+    }
+
+    if (num_cpus < 1) {
+        goto error;
+    }
+
+    max_threads = (int)num_cpus;
+
+done:
+    Py_XDECREF(os);
+    Py_XDECREF(n);
+    return;
+
+error:
+    if (PyErr_Occurred()) {
+        PyErr_Clear();
+    }
+    PyErr_WarnEx(
+        PyExc_RuntimeWarning, "could not get cpu count: using max_threads=1", 1);
+    goto done;
+}
 
 static int
 normalize_quantize_value(int qvalue) {
@@ -206,6 +251,11 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
         self->xmp_bytes = NULL;
 
         encoder = avifEncoderCreate();
+
+        if (max_threads == 0) {
+            init_max_threads();
+        }
+
         encoder->maxThreads = max_threads;
         encoder->minQuantizer = enc_options.qmin;
         encoder->maxQuantizer = enc_options.qmax;
@@ -506,6 +556,9 @@ AvifDecoderNew(PyObject *self_, PyObject *args) {
 
     self->decoder = avifDecoderCreate();
 #if AVIF_VERSION >= 80400
+    if (max_threads == 0) {
+        init_max_threads();
+    }
     self->decoder->maxThreads = max_threads;
 #endif
     self->decoder->codecChoice = codec;
@@ -742,56 +795,9 @@ setup_module(PyObject *m) {
     return 0;
 }
 
-static void
-init_max_threads(void) {
-    PyObject *os = NULL;
-    PyObject *n = NULL;
-    long num_cpus;
-
-    os = PyImport_ImportModule("os");
-    if (os == NULL) {
-        goto error;
-    }
-
-    if (PyObject_HasAttrString(os, "sched_getaffinity")) {
-        n = PyObject_CallMethod(os, "sched_getaffinity", "i", 0);
-        if (n == NULL) {
-            goto error;
-        }
-        num_cpus = PySet_Size(n);
-    } else {
-        n = PyObject_CallMethod(os, "cpu_count", NULL);
-        if (n == NULL) {
-            goto error;
-        }
-        num_cpus = PyLong_AsLong(n);
-    }
-
-    if (num_cpus < 1) {
-        goto error;
-    }
-
-    max_threads = (int)num_cpus;
-
-done:
-    Py_XDECREF(os);
-    Py_XDECREF(n);
-    return;
-
-error:
-    if (PyErr_Occurred()) {
-        PyErr_Clear();
-    }
-    PyErr_WarnEx(
-        PyExc_RuntimeWarning, "could not get cpu count: using max_threads=1", 1);
-    goto done;
-}
-
 PyMODINIT_FUNC
 PyInit__avif(void) {
     PyObject *m;
-
-    init_max_threads();
 
     static PyModuleDef module_def = {
         PyModuleDef_HEAD_INIT,
