@@ -113,9 +113,9 @@ def _save_all(im, fp, filename):
         qmax = max(0, min(100 - quality, 63))
 
     duration = info.get("duration", 0)
-    yuv_format = info.get("yuv_format", "4:2:0")
     qmin_alpha = info.get("qmin_alpha", 0)
     qmax_alpha = info.get("qmax_alpha", 0)
+    subsampling = info.get("subsampling", "4:2:0")
     speed = info.get("speed", 8)
     codec = info.get("codec", "auto")
     range_ = info.get("range", "full")
@@ -133,7 +133,7 @@ def _save_all(im, fp, filename):
     enc = _avif.AvifEncoder(
         im.size[0],
         im.size[1],
-        yuv_format,
+        subsampling,
         qmin,
         qmax,
         qmin_alpha,
