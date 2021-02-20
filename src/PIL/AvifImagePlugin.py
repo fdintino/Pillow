@@ -113,8 +113,6 @@ def _save_all(im, fp, filename):
         qmax = max(0, min(100 - quality, 63))
 
     duration = info.get("duration", 0)
-    qmin_alpha = info.get("qmin_alpha", 0)
-    qmax_alpha = info.get("qmax_alpha", 0)
     subsampling = info.get("subsampling", "4:2:0")
     speed = info.get("speed", 8)
     codec = info.get("codec", "auto")
@@ -136,8 +134,6 @@ def _save_all(im, fp, filename):
         subsampling,
         qmin,
         qmax,
-        qmin_alpha,
-        qmax_alpha,
         speed,
         codec,
         range_,
