@@ -10,7 +10,7 @@
 #endif
 
 typedef struct {
-    avifPixelFormat yuv_format;
+    avifPixelFormat subsampling;
     int qmin;
     int qmax;
     int qmin_alpha;
@@ -154,7 +154,7 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
     AvifEncoderObject *self = NULL;
     avifEncoder *encoder = NULL;
 
-    char *yuv_format = "420";
+    char *subsampling = "4:2:0";
     int qmin = AVIF_QUANTIZER_BEST_QUALITY;    // =0
     int qmax = 10;                             // "High Quality", but not lossless
     int qmin_alpha = AVIF_QUANTIZER_LOSSLESS;  // =0
@@ -172,7 +172,7 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
             "iisiiiiissSSS",
             &width,
             &height,
-            &yuv_format,
+            &subsampling,
             &qmin,
             &qmax,
             &qmin_alpha,
@@ -186,16 +186,16 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
         return NULL;
     }
 
-    if (strcmp(yuv_format, "4:0:0") == 0) {
-        enc_options.yuv_format = AVIF_PIXEL_FORMAT_YUV400;
-    } else if (strcmp(yuv_format, "4:2:0") == 0) {
-        enc_options.yuv_format = AVIF_PIXEL_FORMAT_YUV420;
-    } else if (strcmp(yuv_format, "4:2:2") == 0) {
-        enc_options.yuv_format = AVIF_PIXEL_FORMAT_YUV422;
-    } else if (strcmp(yuv_format, "4:4:4") == 0) {
-        enc_options.yuv_format = AVIF_PIXEL_FORMAT_YUV444;
+    if (strcmp(subsampling, "4:0:0") == 0) {
+        enc_options.subsampling = AVIF_PIXEL_FORMAT_YUV400;
+    } else if (strcmp(subsampling, "4:2:0") == 0) {
+        enc_options.subsampling = AVIF_PIXEL_FORMAT_YUV420;
+    } else if (strcmp(subsampling, "4:2:2") == 0) {
+        enc_options.subsampling = AVIF_PIXEL_FORMAT_YUV422;
+    } else if (strcmp(subsampling, "4:4:4") == 0) {
+        enc_options.subsampling = AVIF_PIXEL_FORMAT_YUV444;
     } else {
-        PyErr_Format(PyExc_ValueError, "Invalid yuv_format: %s", yuv_format);
+        PyErr_Format(PyExc_ValueError, "Invalid subsampling: %s", subsampling);
         return NULL;
     }
 
@@ -269,7 +269,7 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
         avifImage *image = avifImageCreateEmpty();
         // Set these in advance so any upcoming RGB -> YUV use the proper coefficients
         image->yuvRange = enc_options.range;
-        image->yuvFormat = enc_options.yuv_format;
+        image->yuvFormat = enc_options.subsampling;
         image->colorPrimaries = AVIF_COLOR_PRIMARIES_UNSPECIFIED;
         image->transferCharacteristics = AVIF_TRANSFER_CHARACTERISTICS_UNSPECIFIED;
         image->matrixCoefficients = AVIF_MATRIX_COEFFICIENTS_BT601;

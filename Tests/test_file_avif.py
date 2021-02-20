@@ -339,17 +339,17 @@ class TestFileAvif:
             with pytest.raises(EOFError):
                 im.seek(1)
 
-    @pytest.mark.parametrize("yuv_format", ["4:4:4", "4:2:2", "4:0:0"])
-    def test_encoder_yuv_format(self, tmp_path, yuv_format):
+    @pytest.mark.parametrize("subsampling", ["4:4:4", "4:2:2", "4:0:0"])
+    def test_encoder_subsampling(self, tmp_path, subsampling):
         with Image.open(TEST_AVIF_FILE) as im:
             test_file = str(tmp_path / "temp.avif")
-            im.save(test_file, yuv_format=yuv_format)
+            im.save(test_file, subsampling=subsampling)
 
-    def test_encoder_yuv_format_invalid(self, tmp_path):
+    def test_encoder_subsampling_invalid(self, tmp_path):
         with Image.open(TEST_AVIF_FILE) as im:
             test_file = str(tmp_path / "temp.avif")
             with pytest.raises(ValueError):
-                im.save(test_file, yuv_format="foo")
+                im.save(test_file, subsampling="foo")
 
     def test_encoder_range(self, tmp_path):
         with Image.open(TEST_AVIF_FILE) as im:
