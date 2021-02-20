@@ -3,6 +3,7 @@ import re
 import xml.etree.ElementTree
 from contextlib import contextmanager
 from io import BytesIO
+from unittest import mock
 
 import pytest
 
@@ -428,6 +429,33 @@ class TestFileAvif:
 
     def test_encoder_codec_available_invalid(self):
         assert _avif.encoder_codec_available("foo") is False
+
+    @pytest.mark.parametrize(
+        "quality,expected_qminmax",
+        [
+            [0, (63, 63)],
+            [100, (0, 0)],
+            [90, (0, 10)],
+            [None, (0, 10)],  # default
+            [50, (14, 50)],
+        ],
+    )
+    def test_encoder_quality_qmin_qmax_map(self, tmp_path, quality, expected_qminmax):
+        MockEncoder = mock.Mock(wraps=_avif.AvifEncoder)
+        with mock.patch.object(_avif, "AvifEncoder", new=MockEncoder) as mock_encoder:
+            with Image.open("Tests/images/avif/hopper.avif") as im:
+                test_file = str(tmp_path / "temp.avif")
+                if quality is None:
+                    im.save(test_file)
+                else:
+                    im.save(test_file, quality=quality)
+            assert mock_encoder.call_args[0][3:5] == expected_qminmax
+
+    def test_encoder_quality_valueerror(self, tmp_path):
+        with Image.open("Tests/images/avif/hopper.avif") as im:
+            test_file = str(tmp_path / "temp.avif")
+            with pytest.raises(ValueError):
+                im.save(test_file, quality="invalid")
 
     @skip_unless_avif_decoder("aom")
     @skip_unless_feature("avif")
