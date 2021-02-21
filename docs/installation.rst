@@ -208,6 +208,15 @@ Many of Pillow's features require external libraries:
     See `Build Options`_ to see how to build this version.
   * Previous versions of Pillow (5.0.0 to 8.1.2) linked libraqm dynamically at runtime.
 
+* **libavif** provides support for the AVIF format.
+
+  * Pillow requires libavif version **0.8.0** or greater, which is when
+    AVIF image sequence support was added.
+  * libavif is merely an API that wraps AVIF codecs. If you are compiling
+    libavif from source, you will also need to install both an AVIF encoder
+    and decoder, such as rav1e and dav1d, or libaom, which both encodes and
+    decodes AVIF images.
+
 * **libxcb** provides X11 screengrab support.
 
 Once you have installed the prerequisites, run::
@@ -243,14 +252,14 @@ Build Options
 * Build flags: ``--disable-zlib``, ``--disable-jpeg``,
   ``--disable-tiff``, ``--disable-freetype``, ``--disable-lcms``,
   ``--disable-webp``, ``--disable-webpmux``, ``--disable-jpeg2000``,
-  ``--disable-imagequant``, ``--disable-xcb``.
+  ``--disable-imagequant``, ``--disable-xcb``, ``--disable-avif``.
   Disable building the corresponding feature even if the development
   libraries are present on the building machine.
 
 * Build flags: ``--enable-zlib``, ``--enable-jpeg``,
   ``--enable-tiff``, ``--enable-freetype``, ``--enable-lcms``,
   ``--enable-webp``, ``--enable-webpmux``, ``--enable-jpeg2000``,
-  ``--enable-imagequant``, ``--enable-xcb``.
+  ``--enable-imagequant``, ``--enable-xcb``, ``--enable-avif``.
   Require that the corresponding feature is built. The build will raise
   an exception if the libraries are not found. Webpmux (WebP metadata)
   relies on WebP support. Tcl and Tk also must be used together.
@@ -301,6 +310,12 @@ To install libraqm on macOS use Homebrew to install its dependencies::
 
 Then see ``depends/install_raqm_cmake.sh`` to install libraqm.
 
+To install libavif on macOS use Homebrew to install its build dependencies::
+
+    brew install nasm ninja meson cmake
+
+Then see ``depends/install_libavif.sh`` to install libavif.
+
 Now install Pillow with::
 
     python3 -m pip install --upgrade pip
@@ -346,7 +361,8 @@ Prerequisites are installed on **MSYS2 MinGW 64-bit** with::
         mingw-w64-x86_64-libwebp \
         mingw-w64-x86_64-openjpeg2 \
         mingw-w64-x86_64-libimagequant \
-        mingw-w64-x86_64-libraqm
+        mingw-w64-x86_64-libraqm \
+        mingw-w64-x86_64-libavif
 
 Now install Pillow with::
 
@@ -363,11 +379,11 @@ Make sure you have Python's development libraries installed::
 
     sudo pkg install python3
 
-Prerequisites are installed on **FreeBSD 10 or 11** with::
+Prerequisites are installed on **FreeBSD 11 or 12** with::
 
-    sudo pkg install jpeg-turbo tiff webp lcms2 freetype2 openjpeg harfbuzz fribidi libxcb
+    sudo pkg install jpeg-turbo tiff webp lcms2 freetype2 openjpeg harfbuzz fribidi libxcb libavif
 
-Then see ``depends/install_raqm_cmake.sh`` to install libraqm.
+See ``depends/install_raqm_cmake.sh`` to install libraqm.
 
 
 Building on Linux
@@ -396,7 +412,14 @@ Prerequisites for **Ubuntu 16.04 LTS - 20.04 LTS** are installed with::
         libfreetype6-dev liblcms2-dev libwebp-dev tcl8.6-dev tk8.6-dev python3-tk \
         libharfbuzz-dev libfribidi-dev libxcb1-dev
 
-Then see ``depends/install_raqm.sh`` to install libraqm.
+See ``depends/install_raqm.sh`` to install libraqm.
+
+Build prerequisites for libavif on Ubuntu are installed with::
+
+    sudo apt-get install cmake ninja-build nasm
+    sudo python3 -m pip install meson
+
+Then see ``depends/install_libavif.sh`` to build and install libavif.
 
 Prerequisites are installed on recent **Red Hat**, **CentOS** or **Fedora** with::
 

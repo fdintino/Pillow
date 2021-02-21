@@ -57,6 +57,7 @@ behaviour of ``build_prepare.py``:
 * ``--no-imagequant`` will skip GPL-licensed ``libimagequant`` optional dependency
 * ``--no-fribidi`` or ``--no-raqm`` will skip optional LGPL-licensed dependency FriBiDi
   (required for Raqm text shaping).
+* ``--no-avif`` will skip the optional libavif dependency.
 * ``--python=<path>`` and ``--executable=<exe>`` override ``PYTHON`` and ``EXECUTABLE``.
 * ``--architecture=<arch>`` overrides ``ARCHITECTURE``.
 * ``--dir=<path>`` and ``--depends=<path>`` override ``PILLOW_BUILD``
