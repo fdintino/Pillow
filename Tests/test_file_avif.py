@@ -179,6 +179,13 @@ class TestFileAvif:
         )
         assert difference < 5
 
+    def test_save_single_frame(self, tmp_path):
+        temp_file = str(tmp_path / "temp.avif")
+        with Image.open("Tests/images/chi.gif") as im:
+            im.save(temp_file)
+        with Image.open(temp_file) as im:
+            assert im.n_frames == 1
+
     def test_invalid_file(self):
         invalid_file = "Tests/images/flower.jpg"
 
