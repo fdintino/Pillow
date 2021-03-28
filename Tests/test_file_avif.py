@@ -157,8 +157,10 @@ class TestFileAvif:
 
     def test_file_pointer_could_be_reused(self):
         with open(TEST_AVIF_FILE, "rb") as blob:
-            Image.open(blob).load()
-            Image.open(blob).load()
+            with Image.open(blob) as im:
+                im.load()
+            with Image.open(blob) as im:
+                im.load()
 
     def test_background_from_gif(self, tmp_path):
         with Image.open("Tests/images/chi.gif") as im:
@@ -170,7 +172,8 @@ class TestFileAvif:
 
         # Save as GIF
         out_gif = str(tmp_path / "temp.gif")
-        Image.open(out_avif).save(out_gif)
+        with Image.open(out_avif) as im:
+            im.save(out_gif)
 
         with Image.open(out_gif) as reread:
             reread_value = reread.convert("RGB").getpixel((1, 1))
