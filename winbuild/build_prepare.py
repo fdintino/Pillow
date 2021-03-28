@@ -304,9 +304,9 @@ deps = {
         "bins": [r"*.dll"],
     },
     "libavif": {
-        "url": "https://github.com/AOMediaCodec/libavif/archive/v0.8.4.zip",
-        "filename": "libavif-0.8.4.zip",
-        "dir": "libavif-0.8.4",
+        "url": "https://github.com/AOMediaCodec/libavif/archive/v0.9.0.zip",
+        "filename": "libavif-0.9.0.zip",
+        "dir": "libavif-0.9.0",
         "build": [
             cmd_cd("ext"),
             cmd_rmdir("aom"),
