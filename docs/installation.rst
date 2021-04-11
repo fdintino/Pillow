@@ -306,7 +306,7 @@ Then see ``depends/install_raqm_cmake.sh`` to install libraqm.
 
 To install libavif on macOS use Homebrew to install its build dependencies::
 
-    brew install nasm ninja meson cmake
+    brew install aom dav1d rav1e
 
 Then see ``depends/install_libavif.sh`` to install libavif.
 
@@ -411,7 +411,6 @@ See ``depends/install_raqm.sh`` to install libraqm.
 Build prerequisites for libavif on Ubuntu are installed with::
 
     sudo apt-get install cmake ninja-build nasm
-    sudo python3 -m pip install meson
 
 Then see ``depends/install_libavif.sh`` to build and install libavif.
 
