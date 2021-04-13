@@ -1,4 +1,3 @@
-import os
 import re
 import xml.etree.ElementTree
 from contextlib import contextmanager
@@ -10,7 +9,6 @@ import pytest
 from PIL import AvifImagePlugin, Image, features
 
 from .helper import (
-    PillowLeakTestCase,
     assert_image,
     assert_image_similar,
     assert_image_similar_tofile,
@@ -661,26 +659,3 @@ class TestAvifAnimation:
 
             with pytest.raises(EOFError):
                 im.seek(42)
-
-
-if hasattr(os, "sched_getaffinity"):
-    MAX_THREADS = len(os.sched_getaffinity(0))
-else:
-    MAX_THREADS = os.cpu_count()
-
-
-@skip_unless_feature("avif")
-class TestAvifLeaks(PillowLeakTestCase):
-
-    mem_limit = MAX_THREADS * 3 * 1024
-    iterations = 100
-
-    def test_leak_load(self):
-        with open(TEST_AVIF_FILE, "rb") as f:
-            im_data = f.read()
-
-        def core():
-            with Image.open(BytesIO(im_data)) as im:
-                im.load()
-
-        self._test_leak(core)
