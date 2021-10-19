@@ -2,6 +2,7 @@ import re
 import xml.etree.ElementTree
 from contextlib import contextmanager
 from io import BytesIO
+from struct import unpack
 from unittest import mock
 
 import pytest
@@ -60,6 +61,50 @@ def skip_unless_avif_encoder(codec_name):
     return pytest.mark.skipif(
         not _avif or not _avif.encoder_codec_available(codec_name), reason=reason
     )
+
+
+def skip_unless_avif_version_gte(version):
+    if not _avif:
+        reason = "AVIF unavailable"
+        should_skip = True
+    else:
+        version_str = ".".join([str(v) for v in version])
+        reason = "%s < %s" % (_avif.libavif_version, version_str)
+        should_skip = _avif.VERSION < version
+    return pytest.mark.skipif(should_skip, reason=reason)
+
+
+def has_alpha_premultiplied(im_bytes):
+    stream = BytesIO(im_bytes)
+    length = len(im_bytes)
+    while stream.tell() < length:
+        start = stream.tell()
+        size, boxtype = unpack(">L4s", stream.read(8))
+        if not all(0x20 <= c <= 0x7E for c in boxtype):
+            # Not ascii
+            return False
+        if size == 1:  # 64bit size
+            (size,) = unpack(">Q", stream.read(8))
+        end = start + size
+        version, _ = unpack(">B3s", stream.read(4))
+        if boxtype in (b"ftyp", b"hdlr", b"pitm", b"iloc", b"iinf"):
+            # Skip these boxes
+            stream.seek(end)
+            continue
+        elif boxtype == b"meta":
+            # Container box possibly including iref prem, continue to parse boxes
+            # inside it
+            continue
+        elif boxtype == b"iref":
+            while stream.tell() < end:
+                _, iref_type = unpack(">L4s", stream.read(8))
+                version, _ = unpack(">B3s", stream.read(4))
+                if iref_type == b"prem":
+                    return True
+                stream.read(2 if version == 0 else 4)
+        else:
+            return False
+    return False
 
 
 class TestUnsupportedAvif:
@@ -593,6 +638,15 @@ class TestAvifAnimation:
         frame2 = Image.new("RGB", (150, 150))
         with pytest.raises(ValueError):
             frame1.save(temp_file, save_all=True, append_images=[frame2], duration=100)
+
+    @skip_unless_avif_version_gte((0, 9, 0))
+    @pytest.mark.parametrize("alpha_premultipled", [False, True])
+    def test_alpha_premultiplied_true(self, alpha_premultipled):
+        im = Image.new("RGBA", (10, 10), (0, 0, 0, 0))
+        im_buf = BytesIO()
+        im.save(im_buf, "AVIF", alpha_premultiplied=alpha_premultipled)
+        im_bytes = im_buf.getvalue()
+        assert has_alpha_premultiplied(im_bytes) is alpha_premultipled
 
     def test_timestamp_and_duration(self, tmp_path):
         """

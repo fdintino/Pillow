@@ -1078,6 +1078,13 @@ The :py:meth:`~PIL.Image.Image.save` method supports the following options:
     "auto", which will choose the first available codec in the order of the
     preceding list.
 
+**tile_rows** / **tile_cols**
+    For tile encoding, the (log 2) number of tile rows and columns to use.
+    Valid values are 0-6, default 0.
+
+**alpha_premultiplied**
+    Encode the image with premultiplied alpha, defaults ``False``
+
 **icc_profile**
     The ICC Profile to include in the saved file.
 
