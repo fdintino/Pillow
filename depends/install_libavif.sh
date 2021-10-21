@@ -16,9 +16,8 @@ PKGCONFIG=${PKGCONFIG:-pkg-config}
 export CFLAGS="-fPIC -O3 $CFLAGS"
 export CXXFLAGS="-fPIC -O3 $CXXFLAGS"
 
-curl -sLo - \
-    https://github.com/AOMediaCodec/libavif/archive/v$LIBAVIF_VERSION.tar.gz \
-    | tar Czxf . -
+./download-and-extract.sh libavif-$LIBAVIF_VERSION https://github.com/AOMediaCodec/libavif/archive/v$LIBAVIF_VERSION.tar.gz
+
 pushd libavif-$LIBAVIF_VERSION
 
 HAS_DECODER=0
