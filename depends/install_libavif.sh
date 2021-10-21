@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -eo pipefail
 
-LIBAVIF_VERSION=0.9.0
+LIBAVIF_VERSION=0.9.2
 
 if uname -s | grep -q Darwin; then
     PREFIX=/usr/local
