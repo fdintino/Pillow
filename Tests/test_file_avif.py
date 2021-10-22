@@ -198,6 +198,11 @@ class TestFileAvif:
             temp_file = str(tmp_path / "temp.avif")
             pytest.warns(None, image.save, temp_file)
 
+    @pytest.mark.parametrize("major_brand", [b"avif", b"avis", b"mif1", b"msf1"])
+    def test_accept_ftyp_brands(self, major_brand):
+        data = b"\x00\x00\x00\x1cftyp%s\x00\x00\x00\x00" % major_brand
+        assert AvifImagePlugin._accept(data) is True
+
     def test_file_pointer_could_be_reused(self):
         with open(TEST_AVIF_FILE, "rb") as blob:
             with Image.open(blob) as im:

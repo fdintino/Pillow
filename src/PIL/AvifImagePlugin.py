@@ -18,13 +18,30 @@ _VALID_AVIF_MODES = {"RGB", "RGBA"}
 
 
 def _accept(prefix):
-    if prefix[4:12] in (b"ftypavif", b"ftypavis"):
+    if prefix[4:8] != b"ftyp":
+        return
+    coding_brands = (b"avif", b"avis")
+    container_brands = (b"mif1", b"msf1")
+    major_brand = prefix[8:12]
+    if major_brand in coding_brands:
         if not SUPPORTED:
             return (
                 "image file could not be identified because AVIF "
                 "support not installed"
             )
         return True
+    if major_brand in container_brands:
+        # We accept files with AVIF container brands; we can't yet know if
+        # the ftyp box has the correct compatible brands (16 bytes is not
+        # enough to distinguish between an AVIF image and an HEIF image, since
+        # the list of compatible brands doesn't start until 0x10), but if it
+        # isn't a valid AVIF image then the plugin will raise a SyntaxError
+        # which Pillow will catch before moving on to the next plugin that
+        # accepts the file.
+        #
+        # Also, because this file might not actually be an AVIF file we
+        # don't issue a warning like we do above.
+        return SUPPORTED
 
 
 class AvifImageFile(ImageFile.ImageFile):
