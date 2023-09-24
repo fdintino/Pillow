@@ -371,11 +371,18 @@ DEPS = {
         "bins": [r"*.dll"],
     },
     "rav1e": {
-        "url": "https://github.com/xiph/rav1e/releases/download/v0.6.6/rav1e-0.6.6-windows-msvc-generic.zip",
+        "url": (
+            "https://github.com/xiph/rav1e/releases/download/v0.6.6/"
+            "rav1e-0.6.6-windows-msvc-generic.zip"
+        ),
         "filename": "rav1e-0.6.6-windows-msvc-generic.zip",
         "dir": "rav1e-windows-msvc-sdk",
         "license": [],
-        "build": [],
+        "build": [
+            cmd_copy(r"lib\pkgconfig\rav1e.pc", r"{lib_dir}\pkgconfig"),
+        ],
+        "headers": [r"include"],
+        "bins": [r"*.dll"],
     },
     "libavif": {
         "url": "https://github.com/AOMediaCodec/libavif/archive/v1.0.1.zip",
@@ -384,8 +391,6 @@ DEPS = {
         "license": "LICENSE",
         "build": [
             cmd_cd("ext"),
-            cmd_mkdir(r"rav1e\rav1e\build.libavif"),
-            cmd_xcopy(r"..\rav1e-windows-msvc-sdk", r"rav1e\rav1e\build.libavif\usr"),
             cmd_rmdir("dav1d"),
             'cmd.exe /c "dav1d.cmd"',
             cmd_cd(".."),
@@ -393,7 +398,6 @@ DEPS = {
                 "avif",
                 "-DBUILD_SHARED_LIBS=OFF",
                 "-DAVIF_CODEC_RAV1E=ON",
-                "-DAVIF_LOCAL_RAV1E=ON",
                 "-DAVIF_CODEC_DAV1D=ON",
                 "-DAVIF_LOCAL_DAV1D=ON",
             ),
@@ -401,7 +405,6 @@ DEPS = {
             cmd_lib_combine(
                 r"avif_combined.lib",
                 r"avif.lib",
-                r"ext\rav1e\rav1e\build.libavif\usr\lib\rav1e.lib",
                 r"ext\dav1d\build\src\libdav1d.a",
             ),
             cmd_copy(r"avif_combined.lib", r"avif.lib"),
@@ -559,6 +562,8 @@ def build_env() -> None:
         cmd_set("INCLIB", "{lib_dir}"),
         cmd_set("LIB", "{lib_dir}"),
         cmd_append("PATH", "{bin_dir}"),
+        cmd_mkdir(r"{lib_dir}\pkgconfig"),
+        cmd_append("PKG_CONFIG_PATH", r"{lib_dir}\pkgconfig"),
         "call {vcvarsall} {vcvars_arch}",
         cmd_set("DISTUTILS_USE_SDK", "1"),  # use same compiler to build Pillow
         cmd_set("py_vcruntime_redist", "true"),  # always use /MD, never /MT
