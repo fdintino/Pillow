@@ -47,6 +47,7 @@ jobs:
             ghostscript
             ImageMagick
             jpeg
+            libaom-devel
             libfreetype-devel
             libimagequant-devel
             libjpeg-devel
@@ -58,9 +59,7 @@ jobs:
             libwebp-devel
             libxcb-devel
             libxcb-xinerama0
-            git
             cmake
-            ninja
             make
             netpbm
             patch
