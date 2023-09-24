@@ -376,8 +376,6 @@ DEPS = {
         "dir": "rav1e-windows-msvc-sdk",
         "license": [],
         "build": [],
-        "libs": [r"lib\*.lib"],
-        "headers": [r"include"],
     },
     "libavif": {
         "url": "https://github.com/AOMediaCodec/libavif/archive/v1.0.1.zip",
@@ -395,6 +393,7 @@ DEPS = {
                 "avif",
                 "-DBUILD_SHARED_LIBS=OFF",
                 "-DAVIF_CODEC_RAV1E=ON",
+                "-DAVIF_LOCAL_RAV1E=ON",
                 "-DAVIF_CODEC_AOM=ON",
                 "-DAVIF_LOCAL_AOM=ON",
                 "-DAVIF_CODEC_DAV1D=ON",
