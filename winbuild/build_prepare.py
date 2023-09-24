@@ -379,10 +379,10 @@ DEPS = {
         "dir": "rav1e-windows-msvc-sdk",
         "license": [],
         "build": [
+            cmd_xcopy("include", "{inc_dir}"),
             cmd_copy(r"lib\pkgconfig\rav1e.pc", r"{lib_dir}\pkgconfig"),
         ],
-        "headers": [r"include"],
-        "bins": [r"*.dll"],
+        "bins": [r"bin\*.dll"],
     },
     "libavif": {
         "url": "https://github.com/AOMediaCodec/libavif/archive/v1.0.1.zip",
