@@ -62,5 +62,8 @@ if [[ $(uname) != CYGWIN* ]]; then
     # extra test images
     pushd depends && ./install_extra_test_images.sh && popd
 else
+    # libavif
+    cd depends && ./install_libavif.sh && cd ..
+
     cd depends && ./install_extra_test_images.sh && cd ..
 fi
