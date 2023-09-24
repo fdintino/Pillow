@@ -387,7 +387,6 @@ deps = {
                 "-DAVIF_LOCAL_DAV1D=ON",
             ),
             cmd_nmake(),
-            cmd_cd(".."),
             cmd_lib_combine(
                 r"avif_combined.lib",
                 r"avif.lib",
