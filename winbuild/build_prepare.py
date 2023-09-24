@@ -383,6 +383,7 @@ DEPS = {
             cmd_copy(r"lib\pkgconfig\rav1e.pc", r"{lib_dir}\pkgconfig"),
         ],
         "bins": [r"bin\*.dll"],
+        "libs": [r"lib\*.*"],
     },
     "libavif": {
         "url": "https://github.com/AOMediaCodec/libavif/archive/v1.0.1.zip",
