@@ -384,7 +384,7 @@ DEPS = {
         "license": "LICENSE",
         "build": [
             cmd_cd("ext"),
-            cmd_mkdir(r"rav1e\rav1e\build.libavif\usr"),
+            cmd_mkdir(r"rav1e\rav1e\build.libavif"),
             cmd_xcopy(r"..\rav1e-windows-msvc-sdk", r"rav1e\rav1e\build.libavif\usr"),
             cmd_rmdir("dav1d"),
             'cmd.exe /c "dav1d.cmd"',
@@ -394,8 +394,6 @@ DEPS = {
                 "-DBUILD_SHARED_LIBS=OFF",
                 "-DAVIF_CODEC_RAV1E=ON",
                 "-DAVIF_LOCAL_RAV1E=ON",
-                "-DAVIF_CODEC_AOM=ON",
-                "-DAVIF_LOCAL_AOM=ON",
                 "-DAVIF_CODEC_DAV1D=ON",
                 "-DAVIF_LOCAL_DAV1D=ON",
             ),
@@ -403,8 +401,7 @@ DEPS = {
             cmd_lib_combine(
                 r"avif_combined.lib",
                 r"avif.lib",
-                r"{lib_dir}\rav1e.lib",
-                r"ext\aom\build.libavif\aom.lib",
+                r"ext\rav1e\rav1e\build.libavif\usr\lib\rav1e.lib",
                 r"ext\dav1d\build\src\libdav1d.a",
             ),
             cmd_copy(r"avif_combined.lib", r"avif.lib"),
