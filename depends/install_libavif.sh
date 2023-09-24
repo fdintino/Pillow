@@ -1,24 +1,32 @@
 #!/usr/bin/env bash
 set -eo pipefail
 
-LIBAVIF_VERSION=0.9.2
+LIBAVIF_VERSION=${LIBAVIF_VERSION:-1.0.1}
+
+LIBAVIF_CMAKE_FLAGS=()
 
 if uname -s | grep -q Darwin; then
     PREFIX=/usr/local
-    MAKE_INSTALL=(make install)
 else
     PREFIX=/usr
-    MAKE_INSTALL=(sudo make install)
 fi
+
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
 PKGCONFIG=${PKGCONFIG:-pkg-config}
 
 export CFLAGS="-fPIC -O3 $CFLAGS"
 export CXXFLAGS="-fPIC -O3 $CXXFLAGS"
 
-./download-and-extract.sh libavif-$LIBAVIF_VERSION https://github.com/AOMediaCodec/libavif/archive/v$LIBAVIF_VERSION.tar.gz
-
+mkdir -p libavif-$LIBAVIF_VERSION
+curl -sLo - \
+    https://github.com/AOMediaCodec/libavif/archive/v$LIBAVIF_VERSION.tar.gz \
+    | tar --strip-components=1 -C libavif-$LIBAVIF_VERSION -zxf -
 pushd libavif-$LIBAVIF_VERSION
+
+if [ "$LIBAVIF_VERSION" == "1.0.1" ]; then
+    patch -p1 < "${SCRIPT_DIR}/libavif-1.0.1-local-static.patch"
+fi
 
 HAS_DECODER=0
 HAS_ENCODER=0
@@ -63,13 +71,13 @@ if uname -s | grep -q Darwin; then
 fi
 
 mkdir build
-cd build
+pushd build
 cmake .. \
     -DCMAKE_INSTALL_PREFIX=$PREFIX \
     -DCMAKE_BUILD_TYPE=Release \
     "${LIBAVIF_CMAKE_FLAGS[@]}"
-make && "${MAKE_INSTALL[@]}"
-cd ..
-
+make
+sudo make install
 popd
 
+popd

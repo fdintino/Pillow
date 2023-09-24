@@ -1,3 +1,4 @@
+import os
 import re
 import xml.etree.ElementTree
 from contextlib import contextmanager
@@ -7,9 +8,10 @@ from unittest import mock
 
 import pytest
 
-from PIL import AvifImagePlugin, Image, features
+from PIL import AvifImagePlugin, Image, UnidentifiedImageError, features
 
 from .helper import (
+    PillowLeakTestCase,
     assert_image,
     assert_image_similar,
     assert_image_similar_tofile,
@@ -19,11 +21,8 @@ from .helper import (
 
 try:
     from PIL import _avif
-
-    HAVE_AVIF = True
 except ImportError:
     _avif = None
-    HAVE_AVIF = False
 
 
 TEST_AVIF_FILE = "Tests/images/avif/hopper.avif"
@@ -61,6 +60,15 @@ def skip_unless_avif_encoder(codec_name):
     return pytest.mark.skipif(
         not _avif or not _avif.encoder_codec_available(codec_name), reason=reason
     )
+
+
+def is_docker_qemu():
+    try:
+        init_proc_exe = os.readlink("/proc/1/exe")
+    except:  # noqa: E722
+        return False
+    else:
+        return "qemu" in init_proc_exe
 
 
 def skip_unless_avif_version_gte(version):
@@ -109,14 +117,17 @@ def has_alpha_premultiplied(im_bytes):
 
 class TestUnsupportedAvif:
     def test_unsupported(self):
-        if HAVE_AVIF:
+        if features.check("avif"):
             AvifImagePlugin.SUPPORTED = False
 
-        file_path = "Tests/images/avif/hopper.avif"
-        pytest.warns(UserWarning, lambda: pytest.raises(OSError, Image.open, file_path))
-
-        if HAVE_AVIF:
-            AvifImagePlugin.SUPPORTED = True
+        try:
+            file_path = "Tests/images/avif/hopper.avif"
+            pytest.warns(
+                UserWarning,
+                lambda: pytest.raises(UnidentifiedImageError, Image.open, file_path),
+            )
+        finally:
+            AvifImagePlugin.SUPPORTED = features.check("avif")
 
 
 @skip_unless_feature("avif")
@@ -299,11 +310,6 @@ class TestFileAvif:
             exif = im.getexif()
         assert exif[274] == 1
 
-        # With XMP tags
-        with Image.open("Tests/images/avif/xmp_tags_orientation.avif") as im:
-            exif = im.getexif()
-        assert exif[274] == 3
-
     def test_exif_save(self, tmp_path):
         with Image.open("Tests/images/avif/exif.avif") as im:
             test_file = str(tmp_path / "temp.avif")
@@ -441,6 +447,35 @@ class TestFileAvif:
             with pytest.raises(ValueError):
                 im.save(test_file, codec="dav1d")
 
+    @skip_unless_avif_encoder("aom")
+    @skip_unless_avif_version_gte((0, 8, 2))
+    @skip_unless_feature("avif")
+    def test_encoder_advanced_codec_options(self):
+        with Image.open(TEST_AVIF_FILE) as im:
+            ctrl_buf = BytesIO()
+            im.save(ctrl_buf, "AVIF", codec="aom")
+            test_buf = BytesIO()
+            im.save(
+                test_buf,
+                "AVIF",
+                codec="aom",
+                advanced={
+                    "aq-mode": "1",
+                    "enable-chroma-deltaq": "1",
+                },
+            )
+            assert ctrl_buf.getvalue() != test_buf.getvalue()
+
+    @skip_unless_avif_encoder("aom")
+    @skip_unless_avif_version_gte((0, 8, 2))
+    @skip_unless_feature("avif")
+    @pytest.mark.parametrize("val", [{"foo": "bar"}, 1234])
+    def test_encoder_advanced_codec_options_invalid(self, tmp_path, val):
+        with Image.open(TEST_AVIF_FILE) as im:
+            test_file = str(tmp_path / "temp.avif")
+            with pytest.raises(ValueError):
+                im.save(test_file, codec="aom", advanced=val)
+
     @skip_unless_avif_decoder("aom")
     @skip_unless_feature("avif")
     def test_decoder_codec_param(self):
@@ -494,7 +529,7 @@ class TestFileAvif:
             [0, (63, 63)],
             [100, (0, 0)],
             [90, (0, 10)],
-            [None, (0, 10)],  # default
+            [None, (0, 25)],  # default
             [50, (14, 50)],
         ],
     )
@@ -592,12 +627,12 @@ class TestAvifAnimation:
                 # Compare first and second-to-last frames to the original animated GIF
                 orig.load()
                 im.load()
-                assert_image_similar(im, orig.convert("RGB"), 25.0)
+                assert_image_similar(im.convert("RGB"), orig.convert("RGB"), 25.0)
                 orig.seek(orig.n_frames - 2)
                 im.seek(im.n_frames - 2)
                 orig.load()
                 im.load()
-                assert_image_similar(im, orig.convert("RGB"), 25.0)
+                assert_image_similar(im.convert("RGB"), orig.convert("RGB"), 25.0)
 
     def test_write_animation_RGB(self, tmp_path):
         """
@@ -643,6 +678,11 @@ class TestAvifAnimation:
         frame2 = Image.new("RGB", (150, 150))
         with pytest.raises(ValueError):
             frame1.save(temp_file, save_all=True, append_images=[frame2], duration=100)
+
+    def test_heif_raises_unidentified_image_error(self):
+        with pytest.raises(UnidentifiedImageError):
+            with Image.open("Tests/images/avif/rgba10.heif"):
+                pass
 
     @skip_unless_avif_version_gte((0, 9, 0))
     @pytest.mark.parametrize("alpha_premultipled", [False, True])
@@ -718,3 +758,25 @@ class TestAvifAnimation:
 
             with pytest.raises(EOFError):
                 im.seek(42)
+
+
+MAX_THREADS = os.cpu_count()
+
+
+@skip_unless_feature("avif")
+class TestAvifLeaks(PillowLeakTestCase):
+    mem_limit = MAX_THREADS * 3 * 1024
+    iterations = 100
+
+    @pytest.mark.skipif(
+        is_docker_qemu(), reason="Skipping on cross-architecture containers"
+    )
+    def test_leak_load(self):
+        with open(TEST_AVIF_FILE, "rb") as f:
+            im_data = f.read()
+
+        def core():
+            with Image.open(BytesIO(im_data)) as im:
+                im.load()
+
+        self._test_leak(core)

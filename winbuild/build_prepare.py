@@ -367,9 +367,10 @@ deps = {
         "bins": [r"*.dll"],
     },
     "libavif": {
-        "url": "https://github.com/AOMediaCodec/libavif/archive/v0.9.2.zip",
-        "filename": "libavif-0.9.2.zip",
-        "dir": "libavif-0.9.2",
+        "url": "https://github.com/AOMediaCodec/libavif/archive/v1.0.1.zip",
+        "filename": "libavif-1.0.1.zip",
+        "dir": "libavif-1.0.1",
+        "license": "LICENSE",
         "build": [
             cmd_cd("ext"),
             cmd_rmdir("aom"),
@@ -377,7 +378,7 @@ deps = {
             cmd_rmdir("dav1d"),
             'cmd.exe /c "dav1d.cmd"',
             cmd_cd(".."),
-            cmds_cmake(
+            *cmds_cmake(
                 "avif",
                 "-DBUILD_SHARED_LIBS=OFF",
                 "-DAVIF_CODEC_AOM=ON",

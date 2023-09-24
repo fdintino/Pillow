@@ -285,13 +285,13 @@ Many of Pillow's features require external libraries:
 
         brew install freetype harfbuzz fribidi
 
-Then see ``depends/install_raqm_cmake.sh`` to install libraqm.
+    Then see ``depends/install_raqm_cmake.sh`` to install libraqm.
 
-To install libavif on macOS use Homebrew to install its build dependencies::
+    To install libavif on macOS use Homebrew to install its build dependencies::
 
-    brew install aom dav1d rav1e
+        brew install aom dav1d rav1e
 
-Then see ``depends/install_libavif.sh`` to install libavif.
+    Then see ``depends/install_libavif.sh`` to install libavif.
 
 .. tab:: Windows
 

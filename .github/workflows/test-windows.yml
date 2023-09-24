@@ -152,7 +152,7 @@ jobs:
       run: "& winbuild\\build\\build_dep_fribidi.cmd"
 
     - name: Build dependencies / libavif
-      if: steps.build-cache.outputs.cache-hit != 'true' && matrix.architecture == 'x64'
+      if: steps.build-cache.outputs.cache-hit != 'true'
       run: "& winbuild\\build\\build_dep_libavif.cmd"
 
     # trim ~150MB for each job

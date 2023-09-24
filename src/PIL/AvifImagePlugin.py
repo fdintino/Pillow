@@ -32,16 +32,13 @@ def _accept(prefix):
         return True
     if major_brand in container_brands:
         # We accept files with AVIF container brands; we can't yet know if
-        # the ftyp box has the correct compatible brands (16 bytes is not
-        # enough to distinguish between an AVIF image and an HEIF image, since
-        # the list of compatible brands doesn't start until 0x10), but if it
-        # isn't a valid AVIF image then the plugin will raise a SyntaxError
-        # which Pillow will catch before moving on to the next plugin that
-        # accepts the file.
+        # the ftyp box has the correct compatible brands, but if it doesn't
+        # then the plugin will raise a SyntaxError which Pillow will catch
+        # before moving on to the next plugin that accepts the file.
         #
-        # Also, because this file might not actually be an AVIF file we
-        # don't issue a warning like we do above.
-        return SUPPORTED
+        # Also, because this file might not actually be an AVIF file, we
+        # don't raise an error if AVIF support isn't properly compiled.
+        return True
 
 
 class AvifImageFile(ImageFile.ImageFile):
@@ -60,7 +57,7 @@ class AvifImageFile(ImageFile.ImageFile):
         self._size = width, height
         self.n_frames = n_frames
         self.is_animated = self.n_frames > 1
-        self.mode = self.rawmode = mode
+        self._mode = self.rawmode = mode
         self.tile = []
 
         if icc:
@@ -123,14 +120,14 @@ def _save(im, fp, filename, save_all=False):
     if qmin is None and qmax is None:
         # The min and max quantizer settings in libavif range from 0 (best quality)
         # to 63 (worst quality). If neither are explicitly specified, we use a 0-100
-        # quality scale (default 90) and calculate the qmin and qmax from that.
+        # quality scale (default 75) and calculate the qmin and qmax from that.
         #
         # - qmin is 0 for quality >= 64. Below that, qmin has an inverse linear
         #   relation to quality (i.e., quality 63 = qmin 1, quality 0 => qmin 63)
         # - qmax is 0 for quality=100, then qmax increases linearly relative to
         #   quality decreasing, until it flattens out at quality=37.
-        quality = info.get("quality", 90)
-        if not isinstance(quality, int):
+        quality = info.get("quality", 75)
+        if not isinstance(quality, int) or quality < 0 or quality > 100:
             msg = "Invalid quality setting"
             raise ValueError(msg)
         qmin = max(0, min(64 - quality, 63))
@@ -138,12 +135,13 @@ def _save(im, fp, filename, save_all=False):
 
     duration = info.get("duration", 0)
     subsampling = info.get("subsampling", "4:2:0")
-    speed = info.get("speed", 8)
+    speed = info.get("speed", 6)
     codec = info.get("codec", "auto")
     range_ = info.get("range", "full")
     tile_rows_log2 = info.get("tile_rows", 0)
     tile_cols_log2 = info.get("tile_cols", 0)
     alpha_premultiplied = bool(info.get("alpha_premultiplied", False))
+    autotiling = bool(info.get("autotiling", tile_rows_log2 == tile_cols_log2 == 0))
 
     icc_profile = info.get("icc_profile", im.info.get("icc_profile"))
     exif = info.get("exif", im.info.get("exif"))
@@ -154,6 +152,26 @@ def _save(im, fp, filename, save_all=False):
     if isinstance(xmp, str):
         xmp = xmp.encode("utf-8")
 
+    advanced = info.get("advanced")
+    if isinstance(advanced, dict):
+        advanced = tuple([k, v] for (k, v) in advanced.items())
+    if advanced is not None:
+        try:
+            advanced = tuple(advanced)
+        except TypeError:
+            invalid = True
+        else:
+            invalid = all(isinstance(v, tuple) and len(v) == 2 for v in advanced)
+        if invalid:
+            msg = (
+                "advanced codec options must be a dict of key-value string "
+                "pairs or a series of key-value two-tuples"
+            )
+            raise ValueError(msg)
+        advanced = tuple(
+            [(str(k).encode("utf-8"), str(v).encode("utf-8")) for k, v in advanced]
+        )
+
     # Setup the AVIF encoder
     enc = _avif.AvifEncoder(
         im.size[0],
@@ -161,15 +179,18 @@ def _save(im, fp, filename, save_all=False):
         subsampling,
         qmin,
         qmax,
+        quality,
         speed,
         codec,
         range_,
         tile_rows_log2,
         tile_cols_log2,
         alpha_premultiplied,
+        autotiling,
         icc_profile or b"",
         exif or b"",
         xmp or b"",
+        advanced,
     )
 
     # Add each frame

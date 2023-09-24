@@ -1,6 +1,6 @@
 #define PY_SSIZE_T_CLEAN
+
 #include <Python.h>
-#include "libImaging/Imaging.h"
 #include "avif/avif.h"
 
 #if AVIF_VERSION < 80300
@@ -13,12 +13,14 @@ typedef struct {
     avifPixelFormat subsampling;
     int qmin;
     int qmax;
+    int quality;
     int speed;
     avifCodecChoice codec;
     avifRange range;
     avifBool alpha_premultiplied;
     int tile_rows_log2;
     int tile_cols_log2;
+    avifBool autotiling;
 } avifEncOptions;
 
 // Encoder type
@@ -116,9 +118,10 @@ normalize_tiles_log2(int value) {
 static PyObject *
 exc_type_for_avif_result(avifResult result) {
     switch (result) {
-        case AVIF_RESULT_INVALID_FTYP:
         case AVIF_RESULT_INVALID_EXIF_PAYLOAD:
+        case AVIF_RESULT_INVALID_CODEC_SPECIFIC_OPTION:
             return PyExc_ValueError;
+        case AVIF_RESULT_INVALID_FTYP:
         case AVIF_RESULT_BMFF_PARSE_FAILED:
         case AVIF_RESULT_TRUNCATED_DATA:
         case AVIF_RESULT_NO_CONTENT:
@@ -158,10 +161,36 @@ _encoder_codec_available(PyObject *self, PyObject *args) {
     return PyBool_FromLong(is_available);
 }
 
+static void
+_add_codec_specific_options(avifEncoder *encoder, PyObject *opts) {
+    Py_ssize_t i, size;
+    PyObject *keyval, *py_key, *py_val;
+    char *key, *val;
+    if (!PyTuple_Check(opts)) {
+        return;
+    }
+    size = PyTuple_GET_SIZE(opts);
+
+    for (i = 0; i < size; i++) {
+        keyval = PyTuple_GetItem(opts, i);
+        if (!PyTuple_Check(keyval) || PyTuple_GET_SIZE(keyval) != 2) {
+            return;
+        }
+        py_key = PyTuple_GetItem(keyval, 0);
+        py_val = PyTuple_GetItem(keyval, 1);
+        if (!PyBytes_Check(py_key) || !PyBytes_Check(py_val)) {
+            return;
+        }
+        key = PyBytes_AsString(py_key);
+        val = PyBytes_AsString(py_val);
+        avifEncoderSetCodecSpecificOption(encoder, key, val);
+    }
+}
+
 // Encoder functions
 PyObject *
 AvifEncoderNew(PyObject *self_, PyObject *args) {
-    int width, height;
+    unsigned int width, height;
     avifEncOptions enc_options;
     AvifEncoderObject *self = NULL;
     avifEncoder *encoder = NULL;
@@ -169,34 +198,41 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
     char *subsampling = "4:2:0";
     int qmin = AVIF_QUANTIZER_BEST_QUALITY;  // =0
     int qmax = 10;                           // "High Quality", but not lossless
+    int quality = 75;
     int speed = 8;
     PyObject *icc_bytes;
     PyObject *exif_bytes;
     PyObject *xmp_bytes;
     PyObject *alpha_premultiplied = NULL;
+    PyObject *autotiling = NULL;
     int tile_rows_log2 = 0;
     int tile_cols_log2 = 0;
 
     char *codec = "auto";
     char *range = "full";
 
+    PyObject *advanced;
+
     if (!PyArg_ParseTuple(
             args,
-            "iisiiissiiOSSS",
+            "IIsiiiissiiOOSSSO",
             &width,
             &height,
             &subsampling,
             &qmin,
             &qmax,
+            &quality,
             &speed,
             &codec,
             &range,
             &tile_rows_log2,
             &tile_cols_log2,
             &alpha_premultiplied,
+            &autotiling,
             &icc_bytes,
             &exif_bytes,
-            &xmp_bytes)) {
+            &xmp_bytes,
+            &advanced)) {
         return NULL;
     }
 
@@ -215,6 +251,7 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
 
     enc_options.qmin = normalize_quantize_value(qmin);
     enc_options.qmax = normalize_quantize_value(qmax);
+    enc_options.quality = quality;
 
     if (speed < AVIF_SPEED_SLOWEST) {
         speed = AVIF_SPEED_SLOWEST;
@@ -264,6 +301,8 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
         enc_options.alpha_premultiplied = AVIF_FALSE;
     }
 
+    enc_options.autotiling = (autotiling == Py_True) ? AVIF_TRUE : AVIF_FALSE;
+
     // Create a new animation encoder and picture frame
     self = PyObject_New(AvifEncoderObject, &AvifEncoder_Type);
     if (self) {
@@ -278,13 +317,26 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
         }
 
         encoder->maxThreads = max_threads;
+#if AVIF_VERSION >= 1000000
+        encoder->quality = enc_options.quality;
+#else
         encoder->minQuantizer = enc_options.qmin;
         encoder->maxQuantizer = enc_options.qmax;
+#endif
         encoder->codecChoice = enc_options.codec;
         encoder->speed = enc_options.speed;
         encoder->timescale = (uint64_t)1000;
         encoder->tileRowsLog2 = enc_options.tile_rows_log2;
         encoder->tileColsLog2 = enc_options.tile_cols_log2;
+
+#if AVIF_VERSION >= 110000
+        encoder->autoTiling = enc_options.autotiling;
+#endif
+
+#if AVIF_VERSION >= 80200
+        _add_codec_specific_options(encoder, advanced);
+#endif
+
         self->encoder = encoder;
 
         avifImage *image = avifImageCreateEmpty();
