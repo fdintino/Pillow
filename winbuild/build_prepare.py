@@ -397,7 +397,6 @@ DEPS = {
                 "-DAVIF_CODEC_DAV1D=ON",
                 "-DAVIF_LOCAL_DAV1D=ON",
             ),
-            cmd_nmake(),
             cmd_mkdir(r"{inc_dir}\avif"),
             cmd_copy(r"include\avif\avif.h", r"{inc_dir}\avif"),
         ],

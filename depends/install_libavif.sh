@@ -70,6 +70,10 @@ if uname -s | grep -q Darwin; then
     LIBAVIF_CMAKE_FLAGS+=("-DCMAKE_INSTALL_NAME_DIR=$PREFIX/lib" -DCMAKE_MACOSX_RPATH=OFF)
 fi
 
+if [[ $(uname) == CYGWIN* ]]; then
+    perl -pi -e 's/aomCpuUsed >= 7/0/' src/codec_aom.c
+fi
+
 mkdir build
 pushd build
 cmake .. \
