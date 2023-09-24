@@ -393,10 +393,11 @@ deps = {
                 r"ext\aom\build.libavif\aom.lib",
                 r"ext\dav1d\build\src\libdav1d.a",
             ),
+            cmd_copy(r"avif_combined.lib", r"avif.lib"),
             cmd_mkdir(r"{inc_dir}\avif"),
             cmd_copy(r"include\avif\avif.h", r"{inc_dir}\avif"),
         ],
-        "libs": [r"avif_combined.lib"],
+        "libs": [r"avif.lib"],
     },
 }
 

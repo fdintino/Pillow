@@ -60,6 +60,7 @@ jobs:
             libxcb-xinerama0
             make
             netpbm
+            patch
             perl
             python3${{ matrix.python-minor-version }}-cffi
             python3${{ matrix.python-minor-version }}-cython
