@@ -370,6 +370,15 @@ DEPS = {
         ],
         "bins": [r"*.dll"],
     },
+    "rav1e": {
+        "url": "https://github.com/xiph/rav1e/releases/download/v0.6.6/rav1e-0.6.6-windows-msvc-generic.zip",
+        "filename": "rav1e-0.6.6-windows-msvc-generic.zip",
+        "dir": "rav1e-windows-msvc-sdk",
+        "license": [],
+        "build": [],
+        "libs": [r"lib\*.lib"],
+        "headers": [r"include"],
+    },
     "libavif": {
         "url": "https://github.com/AOMediaCodec/libavif/archive/v1.0.1.zip",
         "filename": "libavif-1.0.1.zip",
@@ -377,14 +386,15 @@ DEPS = {
         "license": "LICENSE",
         "build": [
             cmd_cd("ext"),
-            cmd_rmdir("aom"),
-            'cmd.exe /c "aom.cmd"',
+            cmd_mkdir(r"rav1e\rav1e\build.libavif\usr"),
+            cmd_xcopy(r"..\rav1e-windows-msvc-sdk", r"rav1e\rav1e\build.libavif\usr"),
             cmd_rmdir("dav1d"),
             'cmd.exe /c "dav1d.cmd"',
             cmd_cd(".."),
             *cmds_cmake(
                 "avif",
                 "-DBUILD_SHARED_LIBS=OFF",
+                "-DAVIF_CODEC_RAV1E=ON",
                 "-DAVIF_CODEC_AOM=ON",
                 "-DAVIF_LOCAL_AOM=ON",
                 "-DAVIF_CODEC_DAV1D=ON",
@@ -394,6 +404,7 @@ DEPS = {
             cmd_lib_combine(
                 r"avif_combined.lib",
                 r"avif.lib",
+                r"{lib_dir}\rav1e.lib",
                 r"ext\aom\build.libavif\aom.lib",
                 r"ext\dav1d\build\src\libdav1d.a",
             ),
@@ -578,10 +589,11 @@ def build_dep(name: str) -> str:
     if "license_pattern" in dep:
         match = re.search(dep["license_pattern"], license_text, re.DOTALL)
         license_text = "\n".join(match.groups())
-    assert len(license_text) > 50
-    with open(os.path.join(license_dir, f"{dir}.txt"), "w") as f:
-        print(f"Writing license {dir}.txt")
-        f.write(license_text)
+    if licenses:
+        assert len(license_text) > 50
+        with open(os.path.join(license_dir, f"{dir}.txt"), "w") as f:
+            print(f"Writing license {dir}.txt")
+            f.write(license_text)
 
     for patch_file, patch_list in dep.get("patch", {}).items():
         patch_file = os.path.join(sources_dir, dir, patch_file.format(**prefs))

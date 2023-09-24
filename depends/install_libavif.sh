@@ -77,7 +77,7 @@ cmake .. \
     -DCMAKE_BUILD_TYPE=Release \
     "${LIBAVIF_CMAKE_FLAGS[@]}"
 make
-sudo make install
+make install || sudo make install
 popd
 
 popd
