@@ -119,6 +119,14 @@ jobs:
       if: steps.build-cache.outputs.cache-hit != 'true'
       run: "& winbuild\\build\\build_dep_libpng.cmd"
 
+    - name: Build dependencies / rav1e
+      if: steps.build-cache.outputs.cache-hit != 'true'
+      run: "& winbuild\\build\\build_dep_rav1e.cmd"
+
+    - name: Build dependencies / libavif
+      if: steps.build-cache.outputs.cache-hit != 'true'
+      run: "& winbuild\\build\\build_dep_libavif.cmd"
+
     # for FreeType WOFF2 font support
     - name: Build dependencies / brotli
       if: steps.build-cache.outputs.cache-hit != 'true'
@@ -150,14 +158,6 @@ jobs:
     - name: Build dependencies / FriBidi
       if: steps.build-cache.outputs.cache-hit != 'true'
       run: "& winbuild\\build\\build_dep_fribidi.cmd"
-
-    - name: Build dependencies / rav1e
-      if: steps.build-cache.outputs.cache-hit != 'true'
-      run: "& winbuild\\build\\build_dep_rav1e.cmd"
-
-    - name: Build dependencies / libavif
-      if: steps.build-cache.outputs.cache-hit != 'true'
-      run: "& winbuild\\build\\build_dep_libavif.cmd"
 
     # trim ~150MB for each job
     - name: Optimize build cache
