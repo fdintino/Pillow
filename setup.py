@@ -223,7 +223,9 @@ def _find_include_file(self, include):
 
 def _find_shared_library_file(self, library):
     for dir_ in self.compiler.library_dirs:
-        libfile = os.path.join(dir_, self.library_filename(library, lib_type="shared"))
+        libfile = os.path.join(
+            dir_, self.compiler.library_filename(library, lib_type="shared")
+        )
         if os.path.isfile(libfile):
             return libfile
 
