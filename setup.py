@@ -221,6 +221,13 @@ def _find_include_file(self, include):
     return 0
 
 
+def _find_shared_library_file(self, library):
+    for dir_ in self.compiler.library_dirs:
+        libfile = os.path.join(dir_, self.library_filename(library, lib_type="shared"))
+        if os.path.isfile(libfile):
+            return libfile
+
+
 def _find_library_file(self, library):
     ret = self.compiler.find_library_file(self.compiler.library_dirs, library)
     if ret:
@@ -810,6 +817,10 @@ class pil_build_ext(build_ext):
             _dbg("Looking for avif")
             if _find_include_file(self, "avif/avif.h"):
                 if _find_library_file(self, "avif"):
+                    feature.avif = "avif"
+                elif sys.platform == "win32" and _find_shared_library_file(
+                    self, "avif"
+                ):
                     feature.avif = "avif"
 
         for f in feature:
