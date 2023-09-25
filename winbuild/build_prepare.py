@@ -38,6 +38,11 @@ def cmd_rmdir(path: str) -> str:
     return f'rmdir /S /Q "{path}"'
 
 
+def cmd_lib_combine(outfile: str, *libfiles) -> str:
+    params = " ".join(['"%s"' % f for f in libfiles])
+    return "LIB.EXE /OUT:{outfile} {params}".format(outfile=outfile, params=params)
+
+
 def cmd_nmake(
     makefile: str | None = None,
     target: str = "",
@@ -392,15 +397,30 @@ DEPS = {
             cmd_cd(".."),
             *cmds_cmake(
                 "avif",
-                "-DBUILD_SHARED_LIBS=ON",
+                "-DBUILD_SHARED_LIBS=OFF",
                 "-DAVIF_CODEC_RAV1E=ON",
                 "-DAVIF_CODEC_DAV1D=ON",
                 "-DAVIF_LOCAL_DAV1D=ON",
             ),
+            cmd_lib_combine(
+                r"avif_combined.lib",
+                r"avif.lib",
+                r"{lib_dir}\rav1e.lib",
+                r"ws2_32.lib",
+                r"advapi32.lib",
+                r"legacy_stdio_definitions.lib",
+                r"msvcrt.lib",
+                r"bcrypt.lib",
+                r"userenv.lib",
+                r"ntdll.lib",
+                # r"ext\aom\build.libavif\aom.lib",
+                r"ext\dav1d\build\src\libdav1d.a",
+            ),
+            cmd_copy(r"avif_combined.lib", r"avif.lib"),
             cmd_mkdir(r"{inc_dir}\avif"),
             cmd_copy(r"include\avif\avif.h", r"{inc_dir}\avif"),
         ],
-        "bins": [r"avif.dll"],
+        "libs": [r"avif.lib"],
     },
 }
 
