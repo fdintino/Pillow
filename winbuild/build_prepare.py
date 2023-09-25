@@ -38,11 +38,6 @@ def cmd_rmdir(path: str) -> str:
     return f'rmdir /S /Q "{path}"'
 
 
-def cmd_lib_combine(outfile: str, *libfiles) -> str:
-    params = " ".join(['"%s"' % f for f in libfiles])
-    return "LIB.EXE /OUT:{outfile} {params}".format(outfile=outfile, params=params)
-
-
 def cmd_nmake(
     makefile: str | None = None,
     target: str = "",
@@ -380,44 +375,34 @@ DEPS = {
         "license": [],
         "build": [
             cmd_xcopy("include", "{inc_dir}"),
-            cmd_copy(r"lib\pkgconfig\rav1e.pc", r"{lib_dir}\pkgconfig"),
         ],
         "bins": [r"bin\*.dll"],
         "libs": [r"lib\*.*"],
     },
     "libavif": {
-        "url": "https://github.com/AOMediaCodec/libavif/archive/v1.0.1.zip",
-        "filename": "libavif-1.0.1.zip",
-        "dir": "libavif-1.0.1",
+        "url": (
+            "https://github.com/AOMediaCodec/libavif/archive/"
+            "9e0525b63615c189d754d32e4754d104d495ed46.zip"
+        ),
+        "filename": "libavif-9e0525b63615c189d754d32e4754d104d495ed46.zip",
+        "dir": "libavif-9e0525b63615c189d754d32e4754d104d495ed46",
         "license": "LICENSE",
         "build": [
             cmd_cd("ext"),
             cmd_rmdir("dav1d"),
             'cmd.exe /c "dav1d.cmd"',
+            cmd_rmdir("libyuv"),
+            'cmd.exe /c "libyuv.cmd"',
             cmd_cd(".."),
             *cmds_cmake(
                 "avif",
                 "-DBUILD_SHARED_LIBS=OFF",
+                "-DAVIF_LOCAL_LIBYUV=ON",
                 "-DAVIF_CODEC_RAV1E=ON",
                 "-DAVIF_CODEC_DAV1D=ON",
                 "-DAVIF_LOCAL_DAV1D=ON",
             ),
-            cmd_lib_combine(
-                r"avif_combined.lib",
-                r"avif.lib",
-                r"{lib_dir}\rav1e.lib",
-                r"ws2_32.lib",
-                r"advapi32.lib",
-                r"legacy_stdio_definitions.lib",
-                r"msvcrt.lib",
-                r"bcrypt.lib",
-                r"userenv.lib",
-                r"ntdll.lib",
-                r"ext\dav1d\build\src\libdav1d.a",
-            ),
-            cmd_copy(r"avif_combined.lib", r"avif.lib"),
-            cmd_mkdir(r"{inc_dir}\avif"),
-            cmd_copy(r"include\avif\avif.h", r"{inc_dir}\avif"),
+            cmd_xcopy("include", "{inc_dir}"),
         ],
         "libs": [r"avif.lib"],
     },
@@ -570,8 +555,6 @@ def build_env() -> None:
         cmd_set("INCLIB", "{lib_dir}"),
         cmd_set("LIB", "{lib_dir}"),
         cmd_append("PATH", "{bin_dir}"),
-        cmd_mkdir(r"{lib_dir}\pkgconfig"),
-        cmd_append("PKG_CONFIG_PATH", r"{lib_dir}\pkgconfig"),
         "call {vcvarsall} {vcvars_arch}",
         cmd_set("DISTUTILS_USE_SDK", "1"),  # use same compiler to build Pillow
         cmd_set("py_vcruntime_redist", "true"),  # always use /MD, never /MT
@@ -755,8 +738,8 @@ if __name__ == "__main__":
         disabled += ["libimagequant"]
     if args.no_fribidi:
         disabled += ["fribidi"]
-    if args.no_avif:
-        disabled += ["libavif"]
+    if args.no_avif or args.architecture != "x64":
+        disabled += ["rav1e", "libavif"]
 
     prefs = {
         "architecture": args.architecture,

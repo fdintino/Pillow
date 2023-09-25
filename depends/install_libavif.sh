@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -eo pipefail
 
-LIBAVIF_VERSION=${LIBAVIF_VERSION:-1.0.1}
+LIBAVIF_VERSION=${LIBAVIF_VERSION:-9e0525b63615c189d754d32e4754d104d495ed46}
 
 LIBAVIF_CMAKE_FLAGS=()
 
@@ -15,18 +15,11 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
 PKGCONFIG=${PKGCONFIG:-pkg-config}
 
-export CFLAGS="-fPIC -O3 $CFLAGS"
-export CXXFLAGS="-fPIC -O3 $CXXFLAGS"
-
 mkdir -p libavif-$LIBAVIF_VERSION
 curl -sLo - \
-    https://github.com/AOMediaCodec/libavif/archive/v$LIBAVIF_VERSION.tar.gz \
+    https://github.com/AOMediaCodec/libavif/archive/$LIBAVIF_VERSION.tar.gz \
     | tar --strip-components=1 -C libavif-$LIBAVIF_VERSION -zxf -
 pushd libavif-$LIBAVIF_VERSION
-
-if [ "$LIBAVIF_VERSION" == "1.0.1" ]; then
-    patch -p1 < "${SCRIPT_DIR}/libavif-1.0.1-local-static.patch"
-fi
 
 HAS_DECODER=0
 HAS_ENCODER=0
@@ -75,6 +68,7 @@ pushd build
 cmake .. \
     -DCMAKE_INSTALL_PREFIX=$PREFIX \
     -DCMAKE_BUILD_TYPE=Release \
+    -DBUILD_SHARED_LIBS=OFF \
     "${LIBAVIF_CMAKE_FLAGS[@]}"
 make
 make install || sudo make install

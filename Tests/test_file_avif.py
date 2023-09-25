@@ -1,3 +1,4 @@
+import gc
 import os
 import re
 import xml.etree.ElementTree
@@ -778,5 +779,6 @@ class TestAvifLeaks(PillowLeakTestCase):
         def core():
             with Image.open(BytesIO(im_data)) as im:
                 im.load()
+            gc.collect()
 
         self._test_leak(core)
