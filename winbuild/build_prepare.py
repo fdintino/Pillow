@@ -367,10 +367,10 @@ DEPS = {
     },
     "rav1e": {
         "url": (
-            "https://github.com/xiph/rav1e/releases/download/v0.6.6/"
-            "rav1e-0.6.6-windows-msvc-generic.zip"
+            "https://github.com/fdintino/rav1e/releases/download/p20231004/"
+            "rav1e-windows-msvc-generic.zip"
         ),
-        "filename": "rav1e-0.6.6-windows-msvc-generic.zip",
+        "filename": "rav1e-windows-msvc-generic.zip",
         "dir": "rav1e-windows-msvc-sdk",
         "license": [],
         "build": [
