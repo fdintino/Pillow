@@ -367,7 +367,7 @@ DEPS = {
     },
     "rav1e": {
         "url": (
-            "https://github.com/fdintino/rav1e/releases/download/p20231004/"
+            "https://github.com/xiph/rav1e/releases/download/p20231003/"
             "rav1e-windows-msvc-generic.zip"
         ),
         "filename": "rav1e-windows-msvc-generic.zip",
