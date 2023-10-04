@@ -382,10 +382,10 @@ DEPS = {
     "libavif": {
         "url": (
             "https://github.com/AOMediaCodec/libavif/archive/"
-            "f9625fc16e29535a0c822108841d30f1b41ce562.zip"
+            "04bde5f331064112e230a4de2b0bcb7ebf82bb0c.zip"
         ),
-        "filename": "libavif-f9625fc16e29535a0c822108841d30f1b41ce562.zip",
-        "dir": "libavif-f9625fc16e29535a0c822108841d30f1b41ce562",
+        "filename": "libavif-04bde5f331064112e230a4de2b0bcb7ebf82bb0c.zip",
+        "dir": "libavif-04bde5f331064112e230a4de2b0bcb7ebf82bb0c",
         "license": "LICENSE",
         "build": [
             cmd_cd("ext"),
