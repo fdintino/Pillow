@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import gc
 import os
 import re
@@ -5,7 +7,6 @@ import xml.etree.ElementTree
 from contextlib import contextmanager
 from io import BytesIO
 from struct import unpack
-from unittest import mock
 
 import pytest
 

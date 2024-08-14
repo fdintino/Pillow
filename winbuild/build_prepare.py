@@ -122,6 +122,8 @@ V = {
     "TIFF": "4.6.0",
     "XZ": "5.4.5",
     "ZLIB": "1.3.1",
+    "LIBAVIF": "1.1.1",
+    "RAV1E": "0.7.1",
 }
 V["LIBPNG_DOTLESS"] = V["LIBPNG"].replace(".", "")
 V["LIBPNG_XY"] = "".join(V["LIBPNG"].split(".")[:2])
@@ -400,12 +402,12 @@ DEPS = {
     },
     "rav1e": {
         "url": (
-            "https://github.com/xiph/rav1e/releases/download/v0.6.6/"
-            "rav1e-0.6.6-windows-msvc-generic.zip"
+            f"https://github.com/xiph/rav1e/releases/download/v{V['RAV1E']}/"
+            f"rav1e-{V['RAV1E']}-windows-msvc-generic.zip"
         ),
-        "filename": "rav1e-0.6.6-windows-msvc-generic.zip",
+        "filename": f"rav1e-{V['RAV1E']}-windows-msvc-generic.zip",
         "dir": "rav1e-windows-msvc-sdk",
-        "license": [],
+        "license": "LICENSE",
         "build": [
             cmd_xcopy("include", "{inc_dir}"),
         ],
@@ -413,31 +415,41 @@ DEPS = {
         "libs": [r"lib\*.*"],
     },
     "libavif": {
-        "url": (
-            "https://github.com/AOMediaCodec/libavif/archive/"
-            "f9625fc16e29535a0c822108841d30f1b41ce562.zip"
-        ),
-        "filename": "libavif-f9625fc16e29535a0c822108841d30f1b41ce562.zip",
-        "dir": "libavif-f9625fc16e29535a0c822108841d30f1b41ce562",
+        "url": f"https://github.com/AOMediaCodec/libavif/archive/v{V['LIBAVIF']}.zip",
+        "filename": f"libavif-{V['LIBAVIF']}.zip",
+        "dir": f"libavif-{V['LIBAVIF']}",
         "license": "LICENSE",
         "build": [
-            cmd_cd("ext"),
-            cmd_rmdir("dav1d"),
-            'cmd.exe /c "dav1d.cmd"',
-            cmd_rmdir("libyuv"),
-            'cmd.exe /c "libyuv.cmd"',
-            cmd_cd(".."),
-            *cmds_cmake(
-                "avif",
-                "-DBUILD_SHARED_LIBS=OFF",
-                "-DAVIF_LOCAL_LIBYUV=ON",
-                "-DAVIF_CODEC_RAV1E=ON",
-                "-DAVIF_CODEC_DAV1D=ON",
-                "-DAVIF_LOCAL_DAV1D=ON",
+            cmd_mkdir("build.pillow"),
+            cmd_cd("build.pillow"),
+            " ".join(
+                [
+                    "{cmake}",
+                    "-DCMAKE_BUILD_TYPE=Release",
+                    "-DCMAKE_VERBOSE_MAKEFILE=ON",
+                    "-DCMAKE_RULE_MESSAGES:BOOL=OFF",  # for NMake
+                    "-DCMAKE_C_COMPILER=cl.exe",  # for Ninja
+                    "-DCMAKE_CXX_COMPILER=cl.exe",  # for Ninja
+                    "-DCMAKE_C_FLAGS=-nologo",
+                    "-DCMAKE_CXX_FLAGS=-nologo",
+                    "-DBUILD_SHARED_LIBS=OFF",
+                    "-DAVIF_CODEC_AOM=LOCAL",
+                    "-DAVIF_LIBYUV=LOCAL",
+                    "-DAVIF_LIBSHARPYUV=LOCAL",
+                    "-DAVIF_CODEC_RAV1E=SYSTEM",
+                    "-DAVIF_RAV1E_ROOT={build_dir}",
+                    "-DCMAKE_MODULE_PATH={winbuild_dir_cmake}",
+                    "-DAVIF_CODEC_DAV1D=LOCAL",
+                    "-DAVIF_CODEC_SVT=LOCAL",
+                    '-G "Ninja"',
+                    "..",
+                ]
             ),
+            "ninja -v",
+            cmd_cd(".."),
             cmd_xcopy("include", "{inc_dir}"),
         ],
-        "libs": [r"avif.lib"],
+        "libs": [r"build.pillow\avif.lib"],
     },
 }
 
@@ -786,7 +798,7 @@ def main() -> None:
         disabled += ["libimagequant"]
     if args.no_fribidi:
         disabled += ["fribidi"]
-    if args.no_avif or args.architecture != "x64":
+    if args.no_avif or args.architecture == "ARM64":
         disabled += ["rav1e", "libavif"]
 
     prefs = {
@@ -794,6 +806,7 @@ def main() -> None:
         **arch_prefs,
         # Pillow paths
         "winbuild_dir": winbuild_dir,
+        "winbuild_dir_cmake": winbuild_dir.replace("\\", "/"),
         # Build paths
         "bin_dir": bin_dir,
         "build_dir": args.build_dir,

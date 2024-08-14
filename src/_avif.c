@@ -25,8 +25,7 @@ typedef struct {
 
 // Encoder type
 typedef struct {
-    PyObject_HEAD
-    avifEncoder *encoder;
+    PyObject_HEAD avifEncoder *encoder;
     avifImage *image;
     PyObject *icc_bytes;
     PyObject *exif_bytes;
@@ -38,8 +37,7 @@ static PyTypeObject AvifEncoder_Type;
 
 // Decoder type
 typedef struct {
-    PyObject_HEAD
-    avifDecoder *decoder;
+    PyObject_HEAD avifDecoder *decoder;
     PyObject *data;
     char *mode;
 } AvifDecoderObject;
@@ -89,7 +87,8 @@ error:
         PyErr_Clear();
     }
     PyErr_WarnEx(
-        PyExc_RuntimeWarning, "could not get cpu count: using max_threads=1", 1);
+        PyExc_RuntimeWarning, "could not get cpu count: using max_threads=1", 1
+    );
     goto done;
 }
 
@@ -146,9 +145,9 @@ exif_orientation_to_irot_imir(avifImage *image, int orientation) {
             image->transformFlags = otherFlags;
             image->irot.angle = 0;  // ignored
 #if AVIF_VERSION_MAJOR >= 1
-            image->imir.axis = 0;   // ignored
+            image->imir.axis = 0;  // ignored
 #else
-            image->imir.mode = 0;   // ignored
+            image->imir.mode = 0;  // ignored
 #endif
             return;
         case 2:  // The 0th row is at the visual top of the image, and the 0th column is
@@ -237,9 +236,9 @@ exif_orientation_to_irot_imir(avifImage *image, int orientation) {
     image->transformFlags = otherFlags;
     image->irot.angle = 0;  // ignored
 #if AVIF_VERSION_MAJOR >= 1
-    image->imir.axis = 0;   // ignored
+    image->imir.axis = 0;  // ignored
 #else
-    image->imir.mode = 0;   // ignored
+    image->imir.mode = 0;  // ignored
 #endif
 }
 
@@ -348,7 +347,8 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
             &exif_bytes,
             &exif_orientation,
             &xmp_bytes,
-            &advanced)) {
+            &advanced
+        )) {
         return NULL;
     }
 
@@ -497,7 +497,8 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
             avifImageSetProfileICC(
                 image,
                 (uint8_t *)PyBytes_AS_STRING(icc_bytes),
-                PyBytes_GET_SIZE(icc_bytes));
+                PyBytes_GET_SIZE(icc_bytes)
+            );
         } else {
             image->colorPrimaries = AVIF_COLOR_PRIMARIES_BT709;
             image->transferCharacteristics = AVIF_TRANSFER_CHARACTERISTICS_SRGB;
@@ -509,7 +510,8 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
             avifImageSetMetadataExif(
                 image,
                 (uint8_t *)PyBytes_AS_STRING(exif_bytes),
-                PyBytes_GET_SIZE(exif_bytes));
+                PyBytes_GET_SIZE(exif_bytes)
+            );
         }
         if (PyBytes_GET_SIZE(xmp_bytes)) {
             self->xmp_bytes = xmp_bytes;
@@ -517,7 +519,8 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
             avifImageSetMetadataXMP(
                 image,
                 (uint8_t *)PyBytes_AS_STRING(xmp_bytes),
-                PyBytes_GET_SIZE(xmp_bytes));
+                PyBytes_GET_SIZE(xmp_bytes)
+            );
         }
         exif_orientation_to_irot_imir(image, exif_orientation);
 
@@ -573,7 +576,8 @@ _encoder_add(AvifEncoderObject *self, PyObject *args) {
             &width,
             &height,
             &mode,
-            &is_single_frame)) {
+            &is_single_frame
+        )) {
         return NULL;
     }
 
@@ -586,7 +590,8 @@ _encoder_add(AvifEncoderObject *self, PyObject *args) {
             image->width,
             image->height,
             width,
-            height);
+            height
+        );
         return NULL;
     }
 
@@ -632,7 +637,8 @@ _encoder_add(AvifEncoderObject *self, PyObject *args) {
             rgb.rowBytes,
             rgb.height,
             rgb.rowBytes * rgb.height,
-            size);
+            size
+        );
         ret = NULL;
         goto end;
     }
@@ -640,15 +646,15 @@ _encoder_add(AvifEncoderObject *self, PyObject *args) {
     // rgb.pixels is safe for writes
     memcpy(rgb.pixels, rgb_bytes, size);
 
-    Py_BEGIN_ALLOW_THREADS
-    result = avifImageRGBToYUV(frame, &rgb);
+    Py_BEGIN_ALLOW_THREADS result = avifImageRGBToYUV(frame, &rgb);
     Py_END_ALLOW_THREADS
 
-    if (result != AVIF_RESULT_OK) {
+        if (result != AVIF_RESULT_OK) {
         PyErr_Format(
             exc_type_for_avif_result(result),
             "Conversion to YUV failed: %s",
-            avifResultToString(result));
+            avifResultToString(result)
+        );
         ret = NULL;
         goto end;
     }
@@ -658,15 +664,16 @@ _encoder_add(AvifEncoderObject *self, PyObject *args) {
         addImageFlags |= AVIF_ADD_IMAGE_FLAG_SINGLE;
     }
 
-    Py_BEGIN_ALLOW_THREADS
-    result = avifEncoderAddImage(encoder, frame, duration, addImageFlags);
+    Py_BEGIN_ALLOW_THREADS result =
+        avifEncoderAddImage(encoder, frame, duration, addImageFlags);
     Py_END_ALLOW_THREADS
 
-    if (result != AVIF_RESULT_OK) {
+        if (result != AVIF_RESULT_OK) {
         PyErr_Format(
             exc_type_for_avif_result(result),
             "Failed to encode image: %s",
-            avifResultToString(result));
+            avifResultToString(result)
+        );
         ret = NULL;
         goto end;
     }
@@ -693,15 +700,15 @@ _encoder_finish(AvifEncoderObject *self) {
     avifResult result;
     PyObject *ret = NULL;
 
-    Py_BEGIN_ALLOW_THREADS
-    result = avifEncoderFinish(encoder, &raw);
+    Py_BEGIN_ALLOW_THREADS result = avifEncoderFinish(encoder, &raw);
     Py_END_ALLOW_THREADS
 
-    if (result != AVIF_RESULT_OK) {
+        if (result != AVIF_RESULT_OK) {
         PyErr_Format(
             exc_type_for_avif_result(result),
             "Failed to finish encoding: %s",
-            avifResultToString(result));
+            avifResultToString(result)
+        );
         avifRWDataFree(&raw);
         return NULL;
     }
@@ -727,7 +734,9 @@ AvifDecoderNew(PyObject *self_, PyObject *args) {
 
     avifResult result;
 
-    if (!PyArg_ParseTuple(args, "Sssi", &avif_bytes, &codec_str, &upsampling_str, &max_threads)) {
+    if (!PyArg_ParseTuple(
+            args, "Sssi", &avif_bytes, &codec_str, &upsampling_str, &max_threads
+        )) {
         return NULL;
     }
 
@@ -757,7 +766,8 @@ AvifDecoderNew(PyObject *self_, PyObject *args) {
             const char *codec_name = avifCodecName(codec, AVIF_CODEC_FLAG_CAN_DECODE);
             if (codec_name == NULL) {
                 PyErr_Format(
-                    PyExc_ValueError, "AV1 Codec cannot decode: %s", codec_str);
+                    PyExc_ValueError, "AV1 Codec cannot decode: %s", codec_str
+                );
                 return NULL;
             }
         }
@@ -796,7 +806,8 @@ AvifDecoderNew(PyObject *self_, PyObject *args) {
     avifDecoderSetIOMemory(
         self->decoder,
         (uint8_t *)PyBytes_AS_STRING(self->data),
-        PyBytes_GET_SIZE(self->data));
+        PyBytes_GET_SIZE(self->data)
+    );
 
     result = avifDecoderParse(self->decoder);
 
@@ -804,7 +815,8 @@ AvifDecoderNew(PyObject *self_, PyObject *args) {
         PyErr_Format(
             exc_type_for_avif_result(result),
             "Failed to decode image: %s",
-            avifResultToString(result));
+            avifResultToString(result)
+        );
         avifDecoderDestroy(self->decoder);
         self->decoder = NULL;
         Py_DECREF(self);
@@ -860,7 +872,8 @@ _decoder_get_info(AvifDecoderObject *self) {
         self->mode,
         NULL == icc ? Py_None : icc,
         NULL == exif ? Py_None : exif,
-        NULL == xmp ? Py_None : xmp);
+        NULL == xmp ? Py_None : xmp
+    );
 
     Py_XDECREF(xmp);
     Py_XDECREF(exif);
@@ -894,7 +907,8 @@ _decoder_get_frame(AvifDecoderObject *self, PyObject *args) {
             exc_type_for_avif_result(result),
             "Failed to decode frame %u: %s",
             decoder->imageIndex + 1,
-            avifResultToString(result));
+            avifResultToString(result)
+        );
         return NULL;
     }
 
@@ -921,15 +935,15 @@ _decoder_get_frame(AvifDecoderObject *self, PyObject *args) {
 
     avifRGBImageAllocatePixels(&rgb);
 
-    Py_BEGIN_ALLOW_THREADS
-    result = avifImageYUVToRGB(image, &rgb);
+    Py_BEGIN_ALLOW_THREADS result = avifImageYUVToRGB(image, &rgb);
     Py_END_ALLOW_THREADS
 
-    if (result != AVIF_RESULT_OK) {
+        if (result != AVIF_RESULT_OK) {
         PyErr_Format(
             exc_type_for_avif_result(result),
             "Conversion from YUV failed: %s",
-            avifResultToString(result));
+            avifResultToString(result)
+        );
         avifRGBImageFreePixels(&rgb);
         return NULL;
     }
@@ -944,7 +958,8 @@ _decoder_get_frame(AvifDecoderObject *self, PyObject *args) {
         bytes,
         decoder->timescale,
         decoder->imageTiming.ptsInTimescales,
-        decoder->imageTiming.durationInTimescales);
+        decoder->imageTiming.durationInTimescales
+    );
 
     Py_DECREF(bytes);
 
@@ -1011,7 +1026,8 @@ static PyMethodDef avifMethods[] = {
     {"AvifCodecVersions", AvifCodecVersions, METH_NOARGS},
     {"decoder_codec_available", _decoder_codec_available, METH_VARARGS},
     {"encoder_codec_available", _encoder_codec_available, METH_VARARGS},
-    {NULL, NULL}};
+    {NULL, NULL}
+};
 
 static int
 setup_module(PyObject *m) {
@@ -1033,7 +1049,8 @@ setup_module(PyObject *m) {
     Py_DECREF(v);
 
     v = Py_BuildValue(
-        "(iii)", AVIF_VERSION_MAJOR, AVIF_VERSION_MINOR, AVIF_VERSION_PATCH);
+        "(iii)", AVIF_VERSION_MAJOR, AVIF_VERSION_MINOR, AVIF_VERSION_PATCH
+    );
 
     if (PyDict_SetItemString(d, "VERSION", v) < 0) {
         Py_DECREF(v);
