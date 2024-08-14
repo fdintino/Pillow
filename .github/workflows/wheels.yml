@@ -10,6 +10,8 @@ on:
   #        │  │ │ │ │
   - cron: "42 1 * * 0,3"
   push:
+    branches:
+      - "**"
     paths:
       - ".ci/requirements-cibw.txt"
       - ".github/workflows/wheel*"
