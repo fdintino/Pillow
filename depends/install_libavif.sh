@@ -49,11 +49,14 @@ if [ "$HAS_ENCODER" != 1 ] || [ "$HAS_DECODER" != 1 ]; then
     LIBAVIF_CMAKE_FLAGS+=(-DAVIF_CODEC_AOM=LOCAL)
 fi
 
-cmake -S . -B build \
+cmake -G Ninja -S . -B build \
     -DCMAKE_INSTALL_PREFIX=$PREFIX \
+    -DAVIF_LIBYUV=LOCAL \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_NAME_DIR=$PREFIX/lib \
     -DCMAKE_MACOSX_RPATH=OFF \
     "${LIBAVIF_CMAKE_FLAGS[@]}"
+
+ninja -C build install
 
 popd

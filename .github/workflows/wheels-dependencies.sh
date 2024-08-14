@@ -121,6 +121,11 @@ function build_libavif {
             -DCMAKE_MACOSX_RPATH=OFF \
             . \
         && make install)
+
+    if [[ "$MB_ML_LIBC" == "manylinux" ]]; then
+        cp /usr/local/lib64/libavif.a /usr/local/lib
+        cp /usr/local/lib64/pkgconfig/libavif.pc /usr/local/lib/pkgconfig
+    fi
 }
 
 function build {
@@ -212,6 +217,9 @@ if [[ -n "$IS_MACOS" ]]; then
   fi
 
   brew install pkg-config
+
+  # clear bash path cache for curl
+  hash -d curl
 fi
 
 wrap_wheel_builder build
