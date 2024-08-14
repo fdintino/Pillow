@@ -9,7 +9,7 @@ from unittest import mock
 
 import pytest
 
-from PIL import AvifImagePlugin, Image, UnidentifiedImageError, features
+from PIL import AvifImagePlugin, Image, ImageDraw, UnidentifiedImageError, features
 
 from .helper import (
     PillowLeakTestCase,
@@ -18,6 +18,7 @@ from .helper import (
     assert_image_similar_tofile,
     hopper,
     skip_unless_feature,
+    skip_unless_feature_version,
 )
 
 try:
@@ -70,17 +71,6 @@ def is_docker_qemu():
         return False
     else:
         return "qemu" in init_proc_exe
-
-
-def skip_unless_avif_version_gte(version):
-    if not _avif:
-        reason = "AVIF unavailable"
-        should_skip = True
-    else:
-        version_str = ".".join([str(v) for v in version])
-        reason = f"{_avif.libavif_version} < {version_str}"
-        should_skip = _avif.VERSION < version
-    return pytest.mark.skipif(should_skip, reason=reason)
 
 
 def has_alpha_premultiplied(im_bytes):
@@ -240,7 +230,7 @@ class TestFileAvif:
         difference = sum(
             [abs(original_value[i] - reread_value[i]) for i in range(0, 3)]
         )
-        assert difference < 12
+        assert difference < 5
 
     def test_save_single_frame(self, tmp_path):
         temp_file = str(tmp_path / "temp.avif")
@@ -449,7 +439,6 @@ class TestFileAvif:
                 im.save(test_file, codec="dav1d")
 
     @skip_unless_avif_encoder("aom")
-    @skip_unless_avif_version_gte((0, 8, 2))
     @skip_unless_feature("avif")
     def test_encoder_advanced_codec_options(self):
         with Image.open(TEST_AVIF_FILE) as im:
@@ -468,7 +457,6 @@ class TestFileAvif:
             assert ctrl_buf.getvalue() != test_buf.getvalue()
 
     @skip_unless_avif_encoder("aom")
-    @skip_unless_avif_version_gte((0, 8, 2))
     @skip_unless_feature("avif")
     @pytest.mark.parametrize("val", [{"foo": "bar"}, 1234])
     def test_encoder_advanced_codec_options_invalid(self, tmp_path, val):
@@ -524,6 +512,7 @@ class TestFileAvif:
     def test_encoder_codec_available_invalid(self):
         assert _avif.encoder_codec_available("foo") is False
 
+    @skip_unless_feature_version("avif", "1.0.0")
     @pytest.mark.parametrize(
         "quality,expected_qminmax",
         [
@@ -535,15 +524,16 @@ class TestFileAvif:
         ],
     )
     def test_encoder_quality_qmin_qmax_map(self, tmp_path, quality, expected_qminmax):
-        MockEncoder = mock.Mock(wraps=_avif.AvifEncoder)
-        with mock.patch.object(_avif, "AvifEncoder", new=MockEncoder) as mock_encoder:
-            with Image.open("Tests/images/avif/hopper.avif") as im:
-                test_file = str(tmp_path / "temp.avif")
-                if quality is None:
-                    im.save(test_file)
-                else:
-                    im.save(test_file, quality=quality)
-            assert mock_encoder.call_args[0][3:5] == expected_qminmax
+        qmin, qmax = expected_qminmax
+        with Image.open("Tests/images/avif/hopper.avif") as im:
+            out_quality = BytesIO()
+            out_qminmax = BytesIO()
+            im.save(out_qminmax, "AVIF", qmin=qmin, qmax=qmax)
+            if quality is None:
+                im.save(out_quality, "AVIF")
+            else:
+                im.save(out_quality, "AVIF", quality=quality)
+        assert len(out_quality.getvalue()) == len(out_qminmax.getvalue())
 
     def test_encoder_quality_valueerror(self, tmp_path):
         with Image.open("Tests/images/avif/hopper.avif") as im:
@@ -585,6 +575,37 @@ class TestFileAvif:
                     pass
         finally:
             AvifImagePlugin.CHROMA_UPSAMPLING = "auto"
+
+    def test_p_mode_transparency(self):
+        im = Image.new("P", size=(64, 64))
+        draw = ImageDraw.Draw(im)
+        draw.rectangle(xy=[(0, 0), (32, 32)], fill=255)
+        draw.rectangle(xy=[(32, 32), (64, 64)], fill=255)
+
+        buf_png = BytesIO()
+        im.save(buf_png, format="PNG", transparency=0)
+        im_png = Image.open(buf_png)
+        buf_out = BytesIO()
+        im_png.save(buf_out, format="AVIF", quality=100)
+
+        assert_image_similar(im_png.convert("RGBA"), Image.open(buf_out), 1)
+
+    def test_decoder_strict_flags(self):
+        # This would fail if full avif strictFlags were enabled
+        with Image.open("Tests/images/avif/chimera-missing-pixi.avif") as im:
+            assert im.size == (480, 270)
+
+    @skip_unless_avif_encoder("aom")
+    def test_aom_optimizations(self):
+        im = hopper("RGB")
+        buf = BytesIO()
+        im.save(buf, format="AVIF", codec="aom", speed=1)
+
+    @skip_unless_avif_encoder("svt")
+    def test_svt_optimizations(self):
+        im = hopper("RGB")
+        buf = BytesIO()
+        im.save(buf, format="AVIF", codec="svt", speed=1)
 
 
 @skip_unless_feature("avif")
@@ -685,7 +706,6 @@ class TestAvifAnimation:
             with Image.open("Tests/images/avif/rgba10.heif"):
                 pass
 
-    @skip_unless_avif_version_gte((0, 9, 0))
     @pytest.mark.parametrize("alpha_premultipled", [False, True])
     def test_alpha_premultiplied_true(self, alpha_premultipled):
         im = Image.new("RGBA", (10, 10), (0, 0, 0, 0))

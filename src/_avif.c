@@ -46,7 +46,7 @@ typedef struct {
 
 static PyTypeObject AvifDecoder_Type;
 
-static int max_threads = 0;
+static int default_max_threads = 0;
 
 static void
 init_max_threads(void) {
@@ -77,7 +77,7 @@ init_max_threads(void) {
         goto error;
     }
 
-    max_threads = (int)num_cpus;
+    default_max_threads = (int)num_cpus;
 
 done:
     Py_XDECREF(os);
@@ -129,6 +129,118 @@ exc_type_for_avif_result(avifResult result) {
         default:
             return PyExc_RuntimeError;
     }
+}
+
+static void
+exif_orientation_to_irot_imir(avifImage *image, int orientation) {
+    const avifTransformFlags otherFlags =
+        image->transformFlags & ~(AVIF_TRANSFORM_IROT | AVIF_TRANSFORM_IMIR);
+
+    //
+    // Mapping from Exif orientation as defined in JEITA CP-3451C section 4.6.4.A
+    // Orientation to irot and imir boxes as defined in HEIF ISO/IEC 28002-12:2021
+    // sections 6.5.10 and 6.5.12.
+    switch (orientation) {
+        case 1:  // The 0th row is at the visual top of the image, and the 0th column is
+                 // the visual left-hand side.
+            image->transformFlags = otherFlags;
+            image->irot.angle = 0;  // ignored
+#if AVIF_VERSION_MAJOR >= 1
+            image->imir.axis = 0;   // ignored
+#else
+            image->imir.mode = 0;   // ignored
+#endif
+            return;
+        case 2:  // The 0th row is at the visual top of the image, and the 0th column is
+                 // the visual right-hand side.
+            image->transformFlags = otherFlags | AVIF_TRANSFORM_IMIR;
+            image->irot.angle = 0;  // ignored
+#if AVIF_VERSION_MAJOR >= 1
+            image->imir.axis = 1;
+#else
+            image->imir.mode = 1;
+#endif
+            return;
+        case 3:  // The 0th row is at the visual bottom of the image, and the 0th column
+                 // is the visual right-hand side.
+            image->transformFlags = otherFlags | AVIF_TRANSFORM_IROT;
+            image->irot.angle = 2;
+#if AVIF_VERSION_MAJOR >= 1
+            image->imir.axis = 0;  // ignored
+#else
+            image->imir.mode = 0;  // ignored
+#endif
+            return;
+        case 4:  // The 0th row is at the visual bottom of the image, and the 0th column
+                 // is the visual left-hand side.
+            image->transformFlags = otherFlags | AVIF_TRANSFORM_IMIR;
+            image->irot.angle = 0;  // ignored
+#if AVIF_VERSION_MAJOR >= 1
+            image->imir.axis = 0;
+#else
+            image->imir.mode = 0;
+#endif
+            return;
+        case 5:  // The 0th row is the visual left-hand side of the image, and the 0th
+                 // column is the visual top.
+            image->transformFlags =
+                otherFlags | AVIF_TRANSFORM_IROT | AVIF_TRANSFORM_IMIR;
+            image->irot.angle = 1;  // applied before imir according to MIAF spec
+                                    // ISO/IEC 28002-12:2021 - section 7.3.6.7
+#if AVIF_VERSION_MAJOR >= 1
+            image->imir.axis = 0;
+#else
+            image->imir.mode = 0;
+#endif
+            return;
+        case 6:  // The 0th row is the visual right-hand side of the image, and the 0th
+                 // column is the visual top.
+            image->transformFlags = otherFlags | AVIF_TRANSFORM_IROT;
+            image->irot.angle = 3;
+#if AVIF_VERSION_MAJOR >= 1
+            image->imir.axis = 0;  // ignored
+#else
+            image->imir.mode = 0;  // ignored
+#endif
+            return;
+        case 7:  // The 0th row is the visual right-hand side of the image, and the 0th
+                 // column is the visual bottom.
+            image->transformFlags =
+                otherFlags | AVIF_TRANSFORM_IROT | AVIF_TRANSFORM_IMIR;
+            image->irot.angle = 3;  // applied before imir according to MIAF spec
+                                    // ISO/IEC 28002-12:2021 - section 7.3.6.7
+#if AVIF_VERSION_MAJOR >= 1
+            image->imir.axis = 0;
+#else
+            image->imir.mode = 0;
+#endif
+            return;
+        case 8:  // The 0th row is the visual left-hand side of the image, and the 0th
+                 // column is the visual bottom.
+            image->transformFlags = otherFlags | AVIF_TRANSFORM_IROT;
+            image->irot.angle = 1;
+#if AVIF_VERSION_MAJOR >= 1
+            image->imir.axis = 0;  // ignored
+#else
+            image->imir.mode = 0;  // ignored
+#endif
+            return;
+        default:  // reserved
+            break;
+    }
+
+    // The orientation tag is not mandatory (only recommended) according to JEITA
+    // CP-3451C section 4.6.8.A. The default value is 1 if the orientation tag is
+    // missing, meaning:
+    //   The 0th row is at the visual top of the image, and the 0th column is the visual
+    //   left-hand side.
+    image->transformFlags = otherFlags;
+    image->irot.angle = 0;  // ignored
+#if AVIF_VERSION_MAJOR >= 1
+    image->imir.axis = 0;   // ignored
+#else
+    image->imir.mode = 0;   // ignored
+#endif
 }
 
 static int
@@ -200,6 +312,8 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
     int qmax = 10;                           // "High Quality", but not lossless
     int quality = 75;
     int speed = 8;
+    int exif_orientation = 0;
+    int max_threads = default_max_threads;
     PyObject *icc_bytes;
     PyObject *exif_bytes;
     PyObject *xmp_bytes;
@@ -215,7 +329,7 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
 
     if (!PyArg_ParseTuple(
             args,
-            "IIsiiiissiiOOSSSO",
+            "IIsiiiiissiiOOSSiSO",
             &width,
             &height,
             &subsampling,
@@ -223,6 +337,7 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
             &qmax,
             &quality,
             &speed,
+            &max_threads,
             &codec,
             &range,
             &tile_rows_log2,
@@ -231,6 +346,7 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
             &autotiling,
             &icc_bytes,
             &exif_bytes,
+            &exif_orientation,
             &xmp_bytes,
             &advanced)) {
         return NULL;
@@ -249,8 +365,18 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
         return NULL;
     }
 
-    enc_options.qmin = normalize_quantize_value(qmin);
-    enc_options.qmax = normalize_quantize_value(qmax);
+    if (qmin == -1 || qmax == -1) {
+#if AVIF_VERSION >= 1000000
+        enc_options.qmin = -1;
+        enc_options.qmax = -1;
+#else
+        enc_options.qmin = normalize_quantize_value(64 - quality);
+        enc_options.qmax = normalize_quantize_value(100 - quality);
+#endif
+    } else {
+        enc_options.qmin = normalize_quantize_value(qmin);
+        enc_options.qmax = normalize_quantize_value(qmax);
+    }
     enc_options.quality = quality;
 
     if (speed < AVIF_SPEED_SLOWEST) {
@@ -313,12 +439,24 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
         encoder = avifEncoderCreate();
 
         if (max_threads == 0) {
-            init_max_threads();
+            if (default_max_threads == 0) {
+                init_max_threads();
+            }
+            max_threads = default_max_threads;
         }
 
-        encoder->maxThreads = max_threads;
+        int is_aom_encode = strcmp(codec, "aom") == 0 ||
+                            (strcmp(codec, "auto") == 0 &&
+                             _codec_available("aom", AVIF_CODEC_FLAG_CAN_ENCODE));
+
+        encoder->maxThreads = is_aom_encode && max_threads > 64 ? 64 : max_threads;
 #if AVIF_VERSION >= 1000000
-        encoder->quality = enc_options.quality;
+        if (enc_options.qmin != -1 && enc_options.qmax != -1) {
+            encoder->minQuantizer = enc_options.qmin;
+            encoder->maxQuantizer = enc_options.qmax;
+        } else {
+            encoder->quality = enc_options.quality;
+        }
 #else
         encoder->minQuantizer = enc_options.qmin;
         encoder->maxQuantizer = enc_options.qmax;
@@ -381,6 +519,7 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
                 (uint8_t *)PyBytes_AS_STRING(xmp_bytes),
                 PyBytes_GET_SIZE(xmp_bytes));
         }
+        exif_orientation_to_irot_imir(image, exif_orientation);
 
         self->image = image;
         self->frame_index = -1;
@@ -584,10 +723,11 @@ AvifDecoderNew(PyObject *self_, PyObject *args) {
     char *codec_str;
     avifCodecChoice codec;
     avifChromaUpsampling upsampling;
+    int max_threads = 0;
 
     avifResult result;
 
-    if (!PyArg_ParseTuple(args, "Sss", &avif_bytes, &codec_str, &upsampling_str)) {
+    if (!PyArg_ParseTuple(args, "Sssi", &avif_bytes, &codec_str, &upsampling_str, &max_threads)) {
         return NULL;
     }
 
@@ -636,9 +776,20 @@ AvifDecoderNew(PyObject *self_, PyObject *args) {
     self->decoder = avifDecoderCreate();
 #if AVIF_VERSION >= 80400
     if (max_threads == 0) {
-        init_max_threads();
+        if (default_max_threads == 0) {
+            init_max_threads();
+        }
+        max_threads = default_max_threads;
     }
     self->decoder->maxThreads = max_threads;
+#endif
+#if AVIF_VERSION >= 90200
+    // Turn off libavif's 'clap' (clean aperture) property validation.
+    self->decoder->strictFlags &= ~AVIF_STRICT_CLAP_VALID;
+    // Allow the PixelInformationProperty ('pixi') to be missing in AV1 image
+    // items. libheif v1.11.0 and older does not add the 'pixi' item property to
+    // AV1 image items.
+    self->decoder->strictFlags &= ~AVIF_STRICT_PIXI_REQUIRED;
 #endif
     self->decoder->codecChoice = codec;
 

@@ -1,6 +1,6 @@
 from io import BytesIO
 
-from . import Image, ImageFile
+from . import ExifTags, Image, ImageFile
 
 try:
     from . import _avif
@@ -13,6 +13,7 @@ except ImportError:
 # to Image.open (see https://github.com/python-pillow/Pillow/issues/569)
 DECODE_CODEC_CHOICE = "auto"
 CHROMA_UPSAMPLING = "auto"
+DEFAULT_MAX_THREADS = 0
 
 _VALID_AVIF_MODES = {"RGB", "RGBA"}
 
@@ -47,9 +48,12 @@ class AvifImageFile(ImageFile.ImageFile):
     __loaded = -1
     __frame = 0
 
+    def load_seek(self, pos: int) -> None:
+        pass
+
     def _open(self):
         self._decoder = _avif.AvifDecoder(
-            self.fp.read(), DECODE_CODEC_CHOICE, CHROMA_UPSAMPLING
+            self.fp.read(), DECODE_CODEC_CHOICE, CHROMA_UPSAMPLING, DEFAULT_MAX_THREADS
         )
 
         # Get info from decoder
@@ -114,28 +118,16 @@ def _save(im, fp, filename, save_all=False):
 
     is_single_frame = total == 1
 
-    qmin = info.get("qmin")
-    qmax = info.get("qmax")
-
-    if qmin is None and qmax is None:
-        # The min and max quantizer settings in libavif range from 0 (best quality)
-        # to 63 (worst quality). If neither are explicitly specified, we use a 0-100
-        # quality scale (default 75) and calculate the qmin and qmax from that.
-        #
-        # - qmin is 0 for quality >= 64. Below that, qmin has an inverse linear
-        #   relation to quality (i.e., quality 63 = qmin 1, quality 0 => qmin 63)
-        # - qmax is 0 for quality=100, then qmax increases linearly relative to
-        #   quality decreasing, until it flattens out at quality=37.
-        quality = info.get("quality", 75)
-        if not isinstance(quality, int) or quality < 0 or quality > 100:
-            msg = "Invalid quality setting"
-            raise ValueError(msg)
-        qmin = max(0, min(64 - quality, 63))
-        qmax = max(0, min(100 - quality, 63))
+    qmin = info.get("qmin", -1)
+    qmax = info.get("qmax", -1)
+    quality = info.get("quality", 75)
+    if not isinstance(quality, int) or quality < 0 or quality > 100:
+        raise ValueError("Invalid quality setting")
 
     duration = info.get("duration", 0)
     subsampling = info.get("subsampling", "4:2:0")
     speed = info.get("speed", 6)
+    max_threads = info.get("max_threads", DEFAULT_MAX_THREADS)
     codec = info.get("codec", "auto")
     range_ = info.get("range", "full")
     tile_rows_log2 = info.get("tile_rows", 0)
@@ -147,6 +139,20 @@ def _save(im, fp, filename, save_all=False):
     exif = info.get("exif", im.info.get("exif"))
     if isinstance(exif, Image.Exif):
         exif = exif.tobytes()
+
+    exif_orientation = 0
+    if exif:
+        exif_data = Image.Exif()
+        try:
+            exif_data.load(exif)
+        except SyntaxError:
+            pass
+        else:
+            orientation_tag = next(
+                k for k, v in ExifTags.TAGS.items() if v == "Orientation"
+            )
+            exif_orientation = exif_data.get(orientation_tag) or 0
+
     xmp = info.get("xmp", im.info.get("xmp") or im.info.get("XML:com.adobe.xmp"))
 
     if isinstance(xmp, str):
@@ -181,6 +187,7 @@ def _save(im, fp, filename, save_all=False):
         qmax,
         quality,
         speed,
+        max_threads,
         codec,
         range_,
         tile_rows_log2,
@@ -189,6 +196,7 @@ def _save(im, fp, filename, save_all=False):
         autotiling,
         icc_profile or b"",
         exif or b"",
+        exif_orientation,
         xmp or b"",
         advanced,
     )
@@ -214,6 +222,10 @@ def _save(im, fp, filename, save_all=False):
                         "A" in ims.mode
                         or "a" in ims.mode
                         or (ims.mode == "P" and "A" in ims.im.getpalettemode())
+                        or (
+                            ims.mode == "P"
+                            and ims.info.get("transparency", None) is not None
+                        )
                     )
                     rawmode = "RGBA" if alpha else "RGB"
                     frame = ims.convert(rawmode)
