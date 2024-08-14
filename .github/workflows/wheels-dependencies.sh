@@ -82,9 +82,8 @@ function install_rav1e {
     fi
 
     # Force libavif to treat system rav1e as if it were local
-    local cmake=$(get_modern_cmake)
-    local cmake_root=`$cmake --system-information 2>&1 | grep CMAKE_ROOT | grep -v CMAKE_ROOT:INTERNAL | sed -e s/\"//g -e 's/CMAKE_ROOT //g'`
-    cat <<EOF > $cmake_root/Modules/Findrav1e.cmake
+    mkdir -p /tmp/cmake/Modules
+    cat <<EOF > /tmp/cmake/Modules/Findrav1e.cmake
     add_library(rav1e::rav1e STATIC IMPORTED GLOBAL)
     set_target_properties(rav1e::rav1e PROPERTIES
         IMPORTED_LOCATION "$BUILD_PREFIX/lib/librav1e.a"
@@ -118,7 +117,7 @@ function build_libavif {
             -DAVIF_CODEC_DAV1D=LOCAL \
             -DAVIF_CODEC_SVT=LOCAL \
             -DENABLE_NASM=ON \
-            -DCMAKE_MACOSX_RPATH=OFF \
+            -DCMAKE_MODULE_PATH=/tmp/cmake/Modules \
             . \
         && make install)
 
@@ -209,11 +208,11 @@ if [[ -n "$IS_MACOS" ]]; then
   # remove webp and zstd to avoid inclusion on x86_64
   # remove aom and libavif to fix building on arm64
   # curl from brew requires zstd, use system curl
-  brew remove --ignore-dependencies libpng libtiff libxcb libxau libxdmcp curl cairo lcms2 zstd aom libavif
+  brew remove --ignore-dependencies libpng libtiff libxcb libxau libxdmcp curl cairo lcms2 zstd
   if [[ "$CIBW_ARCHS" == "arm64" ]]; then
     brew remove --ignore-dependencies jpeg-turbo
   else
-    brew remove --ignore-dependencies webp
+    brew remove --ignore-dependencies webp aom libavif
   fi
 
   brew install pkg-config

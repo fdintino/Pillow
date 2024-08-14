@@ -57,6 +57,6 @@ cmake -G Ninja -S . -B build \
     -DCMAKE_MACOSX_RPATH=OFF \
     "${LIBAVIF_CMAKE_FLAGS[@]}"
 
-ninja -C build install
+sudo ninja -C build install
 
 popd

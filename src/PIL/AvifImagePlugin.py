@@ -124,7 +124,8 @@ def _save(im, fp, filename, save_all=False):
     qmax = info.get("qmax", -1)
     quality = info.get("quality", 75)
     if not isinstance(quality, int) or quality < 0 or quality > 100:
-        raise ValueError("Invalid quality setting")
+        msg = "Invalid quality setting"
+        raise ValueError(msg)
 
     duration = info.get("duration", 0)
     subsampling = info.get("subsampling", "4:2:0")

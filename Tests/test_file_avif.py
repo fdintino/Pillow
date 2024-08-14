@@ -3,6 +3,7 @@ from __future__ import annotations
 import gc
 import os
 import re
+import warnings
 import xml.etree.ElementTree
 from contextlib import contextmanager
 from io import BytesIO
@@ -199,7 +200,8 @@ class TestFileAvif:
     def test_no_resource_warning(self, tmp_path):
         with Image.open(TEST_AVIF_FILE) as image:
             temp_file = str(tmp_path / "temp.avif")
-            pytest.warns(None, image.save, temp_file)
+            with warnings.catch_warnings():
+                image.save(temp_file)
 
     @pytest.mark.parametrize("major_brand", [b"avif", b"avis", b"mif1", b"msf1"])
     def test_accept_ftyp_brands(self, major_brand):
