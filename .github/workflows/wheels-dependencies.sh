@@ -96,7 +96,7 @@ EOF
 
 function build_libavif {
     install_rav1e
-    $PYTHON_EXE -m pip install meson
+    python -m pip install meson ninja
 
     if [[ "$CIBW_ARCHS" != "arm64" ]]; then
         build_simple nasm 2.15.05 https://www.nasm.us/pub/nasm/releasebuilds/2.15.05/
