@@ -101,7 +101,7 @@ function build_libavif {
     python -m pip install meson ninja
 
     if [[ "$PLAT" == "x86_64" ]]; then
-        build_simple nasm 2.15.05 https://www.nasm.us/pub/nasm/releasebuilds/2.15.05/
+        build_simple nasm 2.16.03 https://www.nasm.us/pub/nasm/releasebuilds/2.16.03/
     fi
 
     local cmake=$(get_modern_cmake)
