@@ -210,7 +210,7 @@ if [[ -n "$IS_MACOS" ]]; then
     brew remove --ignore-dependencies webp aom libavif
   fi
 
-  brew install meson pkg-config
+  brew install pkg-config
 
   # clear bash path cache for curl
   hash -d curl
