@@ -73,7 +73,6 @@ class AvifImageFile(ImageFile.ImageFile):
         self.n_frames = n_frames
         self.is_animated = self.n_frames > 1
         self._mode = self.rawmode = mode
-        self.tile = []
 
         if icc:
             self.info["icc_profile"] = icc
