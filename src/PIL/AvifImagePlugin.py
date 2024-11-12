@@ -242,16 +242,7 @@ def _save(
                 frame = ims
                 rawmode = ims.mode
                 if ims.mode not in _VALID_AVIF_MODES:
-                    alpha = (
-                        "A" in ims.mode
-                        or "a" in ims.mode
-                        or (ims.mode == "P" and "A" in ims.im.getpalettemode())
-                        or (
-                            ims.mode == "P"
-                            and ims.info.get("transparency", None) is not None
-                        )
-                    )
-                    rawmode = "RGBA" if alpha else "RGB"
+                    rawmode = "RGBA" if ims.has_transparency_data else "RGB"
                     frame = ims.convert(rawmode)
 
                 # Update frame duration
