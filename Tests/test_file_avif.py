@@ -549,22 +549,6 @@ class TestFileAvif:
     def test_decoder_codec_available_invalid(self) -> None:
         assert _avif.decoder_codec_available("foo") is False
 
-    @pytest.mark.parametrize("upsampling", ["fastest", "best", "nearest", "bilinear"])
-    def test_decoder_upsampling(
-        self, monkeypatch: pytest.MonkeyPatch, upsampling: str
-    ) -> None:
-        monkeypatch.setattr(AvifImagePlugin, "CHROMA_UPSAMPLING", upsampling)
-
-        with Image.open(TEST_AVIF_FILE):
-            pass
-
-    def test_decoder_upsampling_invalid(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setattr(AvifImagePlugin, "CHROMA_UPSAMPLING", "foo")
-
-        with pytest.raises(ValueError):
-            with Image.open(TEST_AVIF_FILE):
-                pass
-
     def test_p_mode_transparency(self) -> None:
         im = Image.new("P", size=(64, 64))
         draw = ImageDraw.Draw(im)
