@@ -236,7 +236,6 @@ def _save(
 
             for idx in range(nfr):
                 ims.seek(idx)
-                ims.load()
 
                 # Make sure image mode is supported
                 frame = ims
