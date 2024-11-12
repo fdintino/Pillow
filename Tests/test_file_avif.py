@@ -327,6 +327,10 @@ class TestFileAvif:
             exif = im.getexif()
         assert exif[274] == 1
 
+        with Image.open("Tests/images/avif/xmp_tags_orientation.avif") as im:
+            exif = im.getexif()
+        assert exif[274] == 3
+
     def test_exif_save_default(self, tmp_path: Path) -> None:
         with Image.open("Tests/images/avif/exif.avif") as im:
             test_file = str(tmp_path / "temp.avif")
