@@ -168,7 +168,7 @@ def _save(
     autotiling = bool(info.get("autotiling", tile_rows_log2 == tile_cols_log2 == 0))
 
     icc_profile = info.get("icc_profile", im.info.get("icc_profile"))
-    exif = info.get("exif", im.info.get("exif"))
+    exif = info.get("exif")
     if exif:
         if isinstance(exif, Image.Exif):
             exif_data = exif
@@ -180,7 +180,7 @@ def _save(
     else:
         exif_orientation = 1
 
-    xmp = info.get("xmp", im.info.get("xmp") or im.info.get("XML:com.adobe.xmp"))
+    xmp = info.get("xmp")
 
     if isinstance(xmp, str):
         xmp = xmp.encode("utf-8")
