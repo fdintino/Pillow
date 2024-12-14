@@ -96,20 +96,21 @@ class AvifImageFile(ImageFile.ImageFile):
 
         if icc:
             self.info["icc_profile"] = icc
-        if exif:
-            self.info["exif"] = exif
         if xmp:
             self.info["xmp"] = xmp
 
-        if exif_orientation != 1 or exif is not None:
+        if exif_orientation != 1 or exif:
             exif_data = Image.Exif()
-            orig_orientation = 1
-            if exif is not None:
+            if exif:
                 exif_data.load(exif)
-                orig_orientation = exif_data.get(ExifTags.Base.Orientation, 1)
-            if exif_orientation != orig_orientation:
+                original_orientation = exif_data.get(ExifTags.Base.Orientation, 1)
+            else:
+                original_orientation = 1
+            if exif_orientation != original_orientation:
                 exif_data[ExifTags.Base.Orientation] = exif_orientation
-                self.info["exif"] = exif_data.tobytes()
+                exif = exif_data.tobytes()
+        if exif:
+            self.info["exif"] = exif
 
     def seek(self, frame: int) -> None:
         if not self._seek_check(frame):
