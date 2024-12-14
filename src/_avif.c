@@ -1015,24 +1015,6 @@ setup_module(PyObject *m) {
     }
     Py_DECREF(v);
 
-    v = Py_True;
-    Py_INCREF(v);
-    if (PyDict_SetItemString(d, "HAVE_AVIF", v) < 0) {
-        Py_DECREF(v);
-        return -1;
-    }
-    Py_DECREF(v);
-
-    v = Py_BuildValue(
-        "(iii)", AVIF_VERSION_MAJOR, AVIF_VERSION_MINOR, AVIF_VERSION_PATCH
-    );
-
-    if (PyDict_SetItemString(d, "VERSION", v) < 0) {
-        Py_DECREF(v);
-        return -1;
-    }
-    Py_DECREF(v);
-
     if (PyType_Ready(&AvifDecoder_Type) < 0 || PyType_Ready(&AvifEncoder_Type) < 0) {
         return -1;
     }
