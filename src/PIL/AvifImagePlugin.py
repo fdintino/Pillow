@@ -180,8 +180,7 @@ def _save(
     autotiling = bool(info.get("autotiling", tile_rows_log2 == tile_cols_log2 == 0))
 
     icc_profile = info.get("icc_profile", im.info.get("icc_profile"))
-    exif = info.get("exif")
-    if exif:
+    if exif := info.get("exif"):
         if isinstance(exif, Image.Exif):
             exif_data = exif
             exif = exif.tobytes()
