@@ -180,21 +180,18 @@ def _save(
     autotiling = bool(info.get("autotiling", tile_rows_log2 == tile_cols_log2 == 0))
 
     icc_profile = info.get("icc_profile", im.info.get("icc_profile"))
+    exif_orientation = 1
     if exif := info.get("exif"):
         if isinstance(exif, Image.Exif):
             exif_data = exif
-            exif = exif.tobytes()
         else:
             exif_data = Image.Exif()
             exif_data.load(exif)
-        exif_orientation = exif_data.pop(ExifTags.Base.Orientation, 0)
-        if exif_orientation != 0:
-            if len(exif_data):
-                exif = exif_data.tobytes()
-            else:
-                exif = None
-    else:
-        exif_orientation = 0
+        if ExifTags.Base.Orientation in exif_data:
+            exif_orientation = exif_data.pop(ExifTags.Base.Orientation)
+            exif = exif_data.tobytes() if exif_data else b""
+        elif isinstance(exif, Image.Exif):
+            exif = exif_data.tobytes()
 
     xmp = info.get("xmp")
 
