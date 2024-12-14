@@ -133,7 +133,7 @@ exif_orientation_to_irot_imir(avifImage *image, int orientation) {
 #else
             image->imir.mode = 0;  // ignored
 #endif
-            return;
+            break;
         case 2:  // The 0th row is at the visual top of the image, and the 0th column is
                  // the visual right-hand side.
             image->transformFlags = otherFlags | AVIF_TRANSFORM_IMIR;
@@ -143,7 +143,7 @@ exif_orientation_to_irot_imir(avifImage *image, int orientation) {
 #else
             image->imir.mode = 1;
 #endif
-            return;
+            break;
         case 3:  // The 0th row is at the visual bottom of the image, and the 0th column
                  // is the visual right-hand side.
             image->transformFlags = otherFlags | AVIF_TRANSFORM_IROT;
@@ -153,7 +153,7 @@ exif_orientation_to_irot_imir(avifImage *image, int orientation) {
 #else
             image->imir.mode = 0;  // ignored
 #endif
-            return;
+            break;
         case 4:  // The 0th row is at the visual bottom of the image, and the 0th column
                  // is the visual left-hand side.
             image->transformFlags = otherFlags | AVIF_TRANSFORM_IMIR;
@@ -163,7 +163,7 @@ exif_orientation_to_irot_imir(avifImage *image, int orientation) {
 #else
             image->imir.mode = 0;
 #endif
-            return;
+            break;
         case 5:  // The 0th row is the visual left-hand side of the image, and the 0th
                  // column is the visual top.
             image->transformFlags =
@@ -175,7 +175,7 @@ exif_orientation_to_irot_imir(avifImage *image, int orientation) {
 #else
             image->imir.mode = 0;
 #endif
-            return;
+            break;
         case 6:  // The 0th row is the visual right-hand side of the image, and the 0th
                  // column is the visual top.
             image->transformFlags = otherFlags | AVIF_TRANSFORM_IROT;
@@ -185,7 +185,7 @@ exif_orientation_to_irot_imir(avifImage *image, int orientation) {
 #else
             image->imir.mode = 0;  // ignored
 #endif
-            return;
+            break;
         case 7:  // The 0th row is the visual right-hand side of the image, and the 0th
                  // column is the visual bottom.
             image->transformFlags =
@@ -197,7 +197,7 @@ exif_orientation_to_irot_imir(avifImage *image, int orientation) {
 #else
             image->imir.mode = 0;
 #endif
-            return;
+            break;
         case 8:  // The 0th row is the visual left-hand side of the image, and the 0th
                  // column is the visual bottom.
             image->transformFlags = otherFlags | AVIF_TRANSFORM_IROT;
@@ -207,7 +207,7 @@ exif_orientation_to_irot_imir(avifImage *image, int orientation) {
 #else
             image->imir.mode = 0;  // ignored
 #endif
-            return;
+            break;
     }
 }
 
