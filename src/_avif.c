@@ -124,16 +124,6 @@ exif_orientation_to_irot_imir(avifImage *image, int orientation) {
     // Orientation to irot and imir boxes as defined in HEIF ISO/IEC 28002-12:2021
     // sections 6.5.10 and 6.5.12.
     switch (orientation) {
-        case 1:  // The 0th row is at the visual top of the image, and the 0th column is
-                 // the visual left-hand side.
-            image->transformFlags = otherFlags;
-            image->irot.angle = 0;  // ignored
-#if AVIF_VERSION_MAJOR >= 1
-            image->imir.axis = 0;  // ignored
-#else
-            image->imir.mode = 0;  // ignored
-#endif
-            break;
         case 2:  // The 0th row is at the visual top of the image, and the 0th column is
                  // the visual right-hand side.
             image->transformFlags = otherFlags | AVIF_TRANSFORM_IMIR;
@@ -523,7 +513,7 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
                 return NULL;
             }
         }
-        if (exif_orientation > 0) {
+        if (exif_orientation > 1) {
             exif_orientation_to_irot_imir(image, exif_orientation);
         }
 
