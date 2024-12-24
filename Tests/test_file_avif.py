@@ -349,6 +349,17 @@ class TestFileAvif:
             else:
                 assert reloaded.info["exif"] == exif_data
 
+    def test_exif_without_orientation(self, tmp_path: Path):
+        exif = Image.Exif()
+        exif[272] = b"test"
+        exif_data = exif.tobytes()
+        with Image.open(TEST_AVIF_FILE) as im:
+            test_file = str(tmp_path / "temp.avif")
+            im.save(test_file, exif=exif)
+
+        with Image.open(test_file) as reloaded:
+            assert reloaded.info["exif"] == exif_data
+
     def test_exif_invalid(self, tmp_path: Path) -> None:
         with Image.open(TEST_AVIF_FILE) as im:
             test_file = str(tmp_path / "temp.avif")
