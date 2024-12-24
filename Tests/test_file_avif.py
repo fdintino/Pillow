@@ -329,11 +329,11 @@ class TestFileAvif:
             exif = im.getexif()
         assert exif[274] == 3
 
-    @pytest.mark.parametrize("bytes,orientation", [(True, 1), (False, 2)])
+    @pytest.mark.parametrize("use_bytes, orientation", [(True, 1), (False, 2)])
     def test_exif_save(
         self,
         tmp_path: Path,
-        bytes: bool,
+        use_bytes: bool,
         orientation: int,
     ) -> None:
         exif = Image.Exif()
@@ -341,7 +341,7 @@ class TestFileAvif:
         exif_data = exif.tobytes()
         with Image.open(TEST_AVIF_FILE) as im:
             test_file = str(tmp_path / "temp.avif")
-            im.save(test_file, exif=exif_data if bytes else exif)
+            im.save(test_file, exif=exif_data if use_bytes else exif)
 
         with Image.open(test_file) as reloaded:
             if orientation == 1:
@@ -356,7 +356,7 @@ class TestFileAvif:
                 im.save(test_file, exif=b"invalid")
 
     @pytest.mark.parametrize(
-        "rot,mir,exif_orientation",
+        "rot, mir, exif_orientation",
         [
             (0, 0, 4),
             (0, 1, 2),
