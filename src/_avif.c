@@ -606,10 +606,11 @@ _encoder_add(AvifEncoderObject *self, PyObject *args) {
     // rgb.pixels is safe for writes
     memcpy(rgb.pixels, rgb_bytes, size);
 
-    Py_BEGIN_ALLOW_THREADS result = avifImageRGBToYUV(frame, &rgb);
-    Py_END_ALLOW_THREADS
+    Py_BEGIN_ALLOW_THREADS;
+    result = avifImageRGBToYUV(frame, &rgb);
+    Py_END_ALLOW_THREADS;
 
-        if (result != AVIF_RESULT_OK) {
+    if (result != AVIF_RESULT_OK) {
         PyErr_Format(
             exc_type_for_avif_result(result),
             "Conversion to YUV failed: %s",
@@ -624,11 +625,11 @@ _encoder_add(AvifEncoderObject *self, PyObject *args) {
         addImageFlags |= AVIF_ADD_IMAGE_FLAG_SINGLE;
     }
 
-    Py_BEGIN_ALLOW_THREADS result =
-        avifEncoderAddImage(encoder, frame, duration, addImageFlags);
-    Py_END_ALLOW_THREADS
+    Py_BEGIN_ALLOW_THREADS;
+    result = avifEncoderAddImage(encoder, frame, duration, addImageFlags);
+    Py_END_ALLOW_THREADS;
 
-        if (result != AVIF_RESULT_OK) {
+    if (result != AVIF_RESULT_OK) {
         PyErr_Format(
             exc_type_for_avif_result(result),
             "Failed to encode image: %s",
@@ -660,10 +661,11 @@ _encoder_finish(AvifEncoderObject *self) {
     avifResult result;
     PyObject *ret = NULL;
 
-    Py_BEGIN_ALLOW_THREADS result = avifEncoderFinish(encoder, &raw);
-    Py_END_ALLOW_THREADS
+    Py_BEGIN_ALLOW_THREADS;
+    result = avifEncoderFinish(encoder, &raw);
+    Py_END_ALLOW_THREADS;
 
-        if (result != AVIF_RESULT_OK) {
+    if (result != AVIF_RESULT_OK) {
         PyErr_Format(
             exc_type_for_avif_result(result),
             "Failed to finish encoding: %s",
@@ -876,10 +878,11 @@ _decoder_get_frame(AvifDecoderObject *self, PyObject *args) {
         return NULL;
     }
 
-    Py_BEGIN_ALLOW_THREADS result = avifImageYUVToRGB(image, &rgb);
-    Py_END_ALLOW_THREADS
+    Py_BEGIN_ALLOW_THREADS;
+    result = avifImageYUVToRGB(image, &rgb);
+    Py_END_ALLOW_THREADS;
 
-        if (result != AVIF_RESULT_OK) {
+    if (result != AVIF_RESULT_OK) {
         PyErr_Format(
             exc_type_for_avif_result(result),
             "Conversion from YUV failed: %s",
