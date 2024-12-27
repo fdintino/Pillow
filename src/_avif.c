@@ -228,7 +228,7 @@ PyObject *
 AvifEncoderNew(PyObject *self_, PyObject *args) {
     unsigned int width, height;
     AvifEncoderObject *self = NULL;
-    avifEncoder *encoder = NULL;
+    avifEncoder *encoder;
 
     char *subsampling;
     int qmin;
@@ -385,7 +385,6 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
     self->icc_bytes = NULL;
     self->exif_bytes = NULL;
     self->xmp_bytes = NULL;
-    self->image = image;
 
     avifResult result;
     if (PyBytes_GET_SIZE(icc_bytes)) {
@@ -403,6 +402,8 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
             );
             avifImageDestroy(image);
             avifEncoderDestroy(encoder);
+            Py_XDECREF(self->icc_bytes);
+            PyObject_Del(self);
             return NULL;
         }
     } else {
@@ -427,6 +428,9 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
             );
             avifImageDestroy(image);
             avifEncoderDestroy(encoder);
+            Py_XDECREF(self->icc_bytes);
+            Py_XDECREF(self->exif_bytes);
+            PyObject_Del(self);
             return NULL;
         }
     }
@@ -445,6 +449,10 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
             );
             avifImageDestroy(image);
             avifEncoderDestroy(encoder);
+            Py_XDECREF(self->icc_bytes);
+            Py_XDECREF(self->exif_bytes);
+            Py_XDECREF(self->xmp_bytes);
+            PyObject_Del(self);
             return NULL;
         }
     }
@@ -452,6 +460,7 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
         exif_orientation_to_irot_imir(image, exif_orientation);
     }
 
+    self->image = image;
     self->encoder = encoder;
 
     return (PyObject *)self;
@@ -656,6 +665,7 @@ PyObject *
 AvifDecoderNew(PyObject *self_, PyObject *args) {
     PyObject *avif_bytes;
     AvifDecoderObject *self = NULL;
+    avifDecoder *decoder;
 
     char *codec_str;
     avifCodecChoice codec;
@@ -678,29 +688,26 @@ AvifDecoderNew(PyObject *self_, PyObject *args) {
         PyErr_SetString(PyExc_RuntimeError, "could not create decoder object");
         return NULL;
     }
-    self->decoder = NULL;
 
     Py_INCREF(avif_bytes);
     self->data = avif_bytes;
 
-    self->decoder = avifDecoderCreate();
+    decoder = avifDecoderCreate();
 #if AVIF_VERSION >= 80400
-    self->decoder->maxThreads = max_threads;
+    decoder->maxThreads = max_threads;
 #endif
 #if AVIF_VERSION >= 90200
     // Turn off libavif's 'clap' (clean aperture) property validation.
-    self->decoder->strictFlags &= ~AVIF_STRICT_CLAP_VALID;
+    decoder->strictFlags &= ~AVIF_STRICT_CLAP_VALID;
     // Allow the PixelInformationProperty ('pixi') to be missing in AV1 image
     // items. libheif v1.11.0 and older does not add the 'pixi' item property to
     // AV1 image items.
-    self->decoder->strictFlags &= ~AVIF_STRICT_PIXI_REQUIRED;
+    decoder->strictFlags &= ~AVIF_STRICT_PIXI_REQUIRED;
 #endif
-    self->decoder->codecChoice = codec;
+    decoder->codecChoice = codec;
 
     result = avifDecoderSetIOMemory(
-        self->decoder,
-        (uint8_t *)PyBytes_AS_STRING(self->data),
-        PyBytes_GET_SIZE(self->data)
+        decoder, (uint8_t *)PyBytes_AS_STRING(self->data), PyBytes_GET_SIZE(self->data)
     );
     if (result != AVIF_RESULT_OK) {
         PyErr_Format(
@@ -708,30 +715,30 @@ AvifDecoderNew(PyObject *self_, PyObject *args) {
             "Setting IO memory failed: %s",
             avifResultToString(result)
         );
-        avifDecoderDestroy(self->decoder);
-        self->decoder = NULL;
-        Py_DECREF(self);
+        avifDecoderDestroy(decoder);
+        PyObject_Del(self);
         return NULL;
     }
 
-    result = avifDecoderParse(self->decoder);
+    result = avifDecoderParse(decoder);
     if (result != AVIF_RESULT_OK) {
         PyErr_Format(
             exc_type_for_avif_result(result),
             "Failed to decode image: %s",
             avifResultToString(result)
         );
-        avifDecoderDestroy(self->decoder);
-        self->decoder = NULL;
-        Py_DECREF(self);
+        avifDecoderDestroy(decoder);
+        PyObject_Del(self);
         return NULL;
     }
 
-    if (self->decoder->alphaPresent) {
+    if (decoder->alphaPresent) {
         self->mode = "RGBA";
     } else {
         self->mode = "RGB";
     }
+
+    self->decoder = decoder;
 
     return (PyObject *)self;
 }
