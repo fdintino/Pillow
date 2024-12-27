@@ -897,7 +897,7 @@ static struct PyMethodDef _encoder_methods[] = {
     {NULL, NULL} /* sentinel */
 };
 
-// AvifDecoder type definition
+// AvifEncoder type definition
 static PyTypeObject AvifEncoder_Type = {
     PyVarObject_HEAD_INIT(NULL, 0).tp_name = "AvifEncoder",
     .tp_basicsize = sizeof(AvifEncoderObject),
