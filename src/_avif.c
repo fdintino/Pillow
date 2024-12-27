@@ -359,12 +359,14 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
     if (advanced != Py_None) {
 #if AVIF_VERSION >= 80200
         if (_add_codec_specific_options(encoder, advanced)) {
+            avifEncoderDestroy(encoder);
             return NULL;
         }
 #else
         PyErr_SetString(
             PyExc_ValueError, "Advanced codec options require libavif >= 0.8.2"
         );
+        avifEncoderDestroy(encoder);
         return NULL;
 #endif
     }
@@ -372,6 +374,7 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
     self = PyObject_New(AvifEncoderObject, &AvifEncoder_Type);
     if (!self) {
         PyErr_SetString(PyExc_RuntimeError, "could not create encoder object");
+        avifEncoderDestroy(encoder);
         return NULL;
     }
     self->frame_index = -1;
@@ -379,7 +382,6 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
     self->exif_bytes = NULL;
     self->xmp_bytes = NULL;
     self->image = image;
-    self->encoder = encoder;
 
     avifResult result;
     if (PyBytes_GET_SIZE(icc_bytes)) {
@@ -395,6 +397,7 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
                 "Setting ICC profile failed: %s",
                 avifResultToString(result)
             );
+            avifEncoderDestroy(encoder);
             return NULL;
         }
     } else {
@@ -417,6 +420,7 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
                 "Setting EXIF data failed: %s",
                 avifResultToString(result)
             );
+            avifEncoderDestroy(encoder);
             return NULL;
         }
     }
@@ -433,12 +437,15 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
                 "Setting XMP data failed: %s",
                 avifResultToString(result)
             );
+            avifEncoderDestroy(encoder);
             return NULL;
         }
     }
     if (exif_orientation > 1) {
         exif_orientation_to_irot_imir(image, exif_orientation);
     }
+
+    self->encoder = encoder;
 
     return (PyObject *)self;
 }
