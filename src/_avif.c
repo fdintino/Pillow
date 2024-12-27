@@ -308,6 +308,7 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
     // Validate canvas dimensions
     if (width <= 0 || height <= 0) {
         PyErr_SetString(PyExc_ValueError, "invalid canvas dimensions");
+        avifImageDestroy(image);
         return NULL;
     }
     image->width = width;
@@ -359,6 +360,7 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
     if (advanced != Py_None) {
 #if AVIF_VERSION >= 80200
         if (_add_codec_specific_options(encoder, advanced)) {
+            avifImageDestroy(image);
             avifEncoderDestroy(encoder);
             return NULL;
         }
@@ -366,6 +368,7 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
         PyErr_SetString(
             PyExc_ValueError, "Advanced codec options require libavif >= 0.8.2"
         );
+        avifImageDestroy(image);
         avifEncoderDestroy(encoder);
         return NULL;
 #endif
@@ -374,6 +377,7 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
     self = PyObject_New(AvifEncoderObject, &AvifEncoder_Type);
     if (!self) {
         PyErr_SetString(PyExc_RuntimeError, "could not create encoder object");
+        avifImageDestroy(image);
         avifEncoderDestroy(encoder);
         return NULL;
     }
@@ -397,6 +401,7 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
                 "Setting ICC profile failed: %s",
                 avifResultToString(result)
             );
+            avifImageDestroy(image);
             avifEncoderDestroy(encoder);
             return NULL;
         }
@@ -420,6 +425,7 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
                 "Setting EXIF data failed: %s",
                 avifResultToString(result)
             );
+            avifImageDestroy(image);
             avifEncoderDestroy(encoder);
             return NULL;
         }
@@ -437,6 +443,7 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
                 "Setting XMP data failed: %s",
                 avifResultToString(result)
             );
+            avifImageDestroy(image);
             avifEncoderDestroy(encoder);
             return NULL;
         }
