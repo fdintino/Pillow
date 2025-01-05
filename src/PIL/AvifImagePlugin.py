@@ -18,8 +18,6 @@ except ImportError:
 DECODE_CODEC_CHOICE = "auto"
 DEFAULT_MAX_THREADS = 0
 
-_VALID_AVIF_MODES = {"RGB", "RGBA"}
-
 
 def _accept(prefix: bytes) -> bool | str:
     if prefix[4:8] != b"ftyp":
@@ -257,7 +255,7 @@ def _save(
                 # Make sure image mode is supported
                 frame = ims
                 rawmode = ims.mode
-                if ims.mode not in _VALID_AVIF_MODES:
+                if ims.mode not in {"RGB", "RGBA"}:
                     rawmode = "RGBA" if ims.has_transparency_data else "RGB"
                     frame = ims.convert(rawmode)
 
