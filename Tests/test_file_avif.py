@@ -170,10 +170,8 @@ class TestFileAvif:
             # difference between the two images is less than the epsilon value,
             # then we're going to accept that it's a reasonable lossy version of
             # the image.
-            target = hopper(mode)
-            if mode != "RGB":
-                target = target.convert("RGB")
-            assert_image_similar(image, target, epsilon)
+            expected = hopper()
+            assert_image_similar(image, expected, epsilon)
 
     def test_write_rgb(self, tmp_path: Path) -> None:
         """
