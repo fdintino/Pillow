@@ -390,12 +390,13 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
     self->xmp_bytes = NULL;
 
     avifResult result;
-    if (PyBytes_GET_SIZE(icc_bytes)) {
+    Py_ssize_t size = PyBytes_GET_SIZE(icc_bytes);
+    if (size) {
         self->icc_bytes = icc_bytes;
         Py_INCREF(icc_bytes);
 
         result = avifImageSetProfileICC(
-            image, (uint8_t *)PyBytes_AS_STRING(icc_bytes), PyBytes_GET_SIZE(icc_bytes)
+            image, (uint8_t *)PyBytes_AS_STRING(icc_bytes), size
         );
         if (result != AVIF_RESULT_OK) {
             PyErr_Format(
@@ -414,14 +415,13 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
         image->transferCharacteristics = AVIF_TRANSFER_CHARACTERISTICS_SRGB;
     }
 
-    if (PyBytes_GET_SIZE(exif_bytes)) {
+    size = PyBytes_GET_SIZE(exif_bytes);
+    if (size) {
         self->exif_bytes = exif_bytes;
         Py_INCREF(exif_bytes);
 
         result = avifImageSetMetadataExif(
-            image,
-            (uint8_t *)PyBytes_AS_STRING(exif_bytes),
-            PyBytes_GET_SIZE(exif_bytes)
+            image, (uint8_t *)PyBytes_AS_STRING(exif_bytes), size
         );
         if (result != AVIF_RESULT_OK) {
             PyErr_Format(
@@ -437,12 +437,14 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
             return NULL;
         }
     }
-    if (PyBytes_GET_SIZE(xmp_bytes)) {
+
+    size = PyBytes_GET_SIZE(xmp_bytes);
+    if (size) {
         self->xmp_bytes = xmp_bytes;
         Py_INCREF(xmp_bytes);
 
         result = avifImageSetMetadataXMP(
-            image, (uint8_t *)PyBytes_AS_STRING(xmp_bytes), PyBytes_GET_SIZE(xmp_bytes)
+            image, (uint8_t *)PyBytes_AS_STRING(xmp_bytes), size
         );
         if (result != AVIF_RESULT_OK) {
             PyErr_Format(
