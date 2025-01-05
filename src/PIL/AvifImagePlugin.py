@@ -206,7 +206,7 @@ def _save(
         except TypeError:
             invalid = True
         else:
-            invalid = all(isinstance(v, tuple) and len(v) == 2 for v in advanced)
+            invalid = any(not isinstance(v, tuple) or len(v) != 2 for v in advanced)
         if invalid:
             msg = (
                 "advanced codec options must be a dict of key-value string "

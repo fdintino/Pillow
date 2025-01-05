@@ -479,7 +479,19 @@ class TestFileAvif:
 
     @skip_unless_avif_encoder("aom")
     @skip_unless_feature("avif")
-    def test_encoder_advanced_codec_options(self) -> None:
+    @pytest.mark.parametrize(
+        "advanced",
+        [
+            {
+                "aq-mode": "1",
+                "enable-chroma-deltaq": "1",
+            },
+            (("aq-mode", "1"), ("enable-chroma-deltaq", "1")),
+        ],
+    )
+    def test_encoder_advanced_codec_options(
+        self, advanced: dict[str, str] | tuple[tuple[str, str], ...]
+    ) -> None:
         with Image.open(TEST_AVIF_FILE) as im:
             ctrl_buf = BytesIO()
             im.save(ctrl_buf, "AVIF", codec="aom")
@@ -488,10 +500,7 @@ class TestFileAvif:
                 test_buf,
                 "AVIF",
                 codec="aom",
-                advanced={
-                    "aq-mode": "1",
-                    "enable-chroma-deltaq": "1",
-                },
+                advanced=advanced,
             )
             assert ctrl_buf.getvalue() != test_buf.getvalue()
 
