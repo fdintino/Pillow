@@ -289,6 +289,7 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
         image->yuvRange = AVIF_RANGE_LIMITED;
     } else {
         PyErr_SetString(PyExc_ValueError, "Invalid range");
+        avifImageDestroy(image);
         return NULL;
     }
     if (strcmp(subsampling, "4:0:0") == 0) {
@@ -301,6 +302,7 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
         image->yuvFormat = AVIF_PIXEL_FORMAT_YUV444;
     } else {
         PyErr_Format(PyExc_ValueError, "Invalid subsampling: %s", subsampling);
+        avifImageDestroy(image);
         return NULL;
     }
 
