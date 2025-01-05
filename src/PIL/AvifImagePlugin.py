@@ -39,8 +39,7 @@ def _accept(prefix: bytes) -> bool | str:
     ):
         if not SUPPORTED:
             return (
-                "image file could not be identified because AVIF "
-                "support not installed"
+                "image file could not be identified because AVIF support not installed"
             )
         return True
     return False
@@ -60,9 +59,6 @@ class AvifImageFile(ImageFile.ImageFile):
     format_description = "AVIF image"
     __loaded = -1
     __frame = 0
-
-    def load_seek(self, pos: int) -> None:
-        pass
 
     def _open(self) -> None:
         if not SUPPORTED:
@@ -134,6 +130,9 @@ class AvifImageFile(ImageFile.ImageFile):
 
         return super().load()
 
+    def load_seek(self, pos: int) -> None:
+        pass
+
     def tell(self) -> int:
         return self.__frame
 
@@ -198,9 +197,9 @@ def _save(
         xmp = xmp.encode("utf-8")
 
     advanced = info.get("advanced")
-    if isinstance(advanced, dict):
-        advanced = tuple([k, v] for (k, v) in advanced.items())
     if advanced is not None:
+        if isinstance(advanced, dict):
+            advanced = advanced.items()
         try:
             advanced = tuple(advanced)
         except TypeError:
@@ -213,9 +212,6 @@ def _save(
                 "pairs or a series of key-value two-tuples"
             )
             raise ValueError(msg)
-        advanced = tuple(
-            (str(k).encode("utf-8"), str(v).encode("utf-8")) for k, v in advanced
-        )
 
     # Setup the AVIF encoder
     enc = _avif.AvifEncoder(

@@ -188,7 +188,6 @@ static int
 _add_codec_specific_options(avifEncoder *encoder, PyObject *opts) {
     Py_ssize_t i, size;
     PyObject *keyval, *py_key, *py_val;
-    char *key, *val;
     if (!PyTuple_Check(opts)) {
         PyErr_SetString(PyExc_ValueError, "Invalid advanced codec options");
         return 1;
@@ -203,12 +202,16 @@ _add_codec_specific_options(avifEncoder *encoder, PyObject *opts) {
         }
         py_key = PyTuple_GetItem(keyval, 0);
         py_val = PyTuple_GetItem(keyval, 1);
-        if (!PyBytes_Check(py_key) || !PyBytes_Check(py_val)) {
+        if (!PyUnicode_Check(py_key) || !PyUnicode_Check(py_val)) {
             PyErr_SetString(PyExc_ValueError, "Invalid advanced codec options");
             return 1;
         }
-        key = PyBytes_AsString(py_key);
-        val = PyBytes_AsString(py_val);
+        const char *key = PyUnicode_AsUTF8(py_key);
+        const char *val = PyUnicode_AsUTF8(py_val);
+        if (key == NULL || val == NULL) {
+            PyErr_SetString(PyExc_ValueError, "Invalid advanced codec options");
+            return 1;
+        }
 
         avifResult result = avifEncoderSetCodecSpecificOption(encoder, key, val);
         if (result != AVIF_RESULT_OK) {
