@@ -306,10 +306,6 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
         return NULL;
     }
 
-    image->colorPrimaries = AVIF_COLOR_PRIMARIES_UNSPECIFIED;
-    image->transferCharacteristics = AVIF_TRANSFER_CHARACTERISTICS_UNSPECIFIED;
-    image->matrixCoefficients = AVIF_MATRIX_COEFFICIENTS_BT601;
-
     // Validate canvas dimensions
     if (width <= 0 || height <= 0) {
         PyErr_SetString(PyExc_ValueError, "invalid canvas dimensions");
@@ -412,10 +408,15 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
             PyObject_Del(self);
             return NULL;
         }
+        // colorPrimaries and transferCharacteristics are ignored when an ICC
+        // profile is present, so set them to UNSPECIFIED.
+        image->colorPrimaries = AVIF_COLOR_PRIMARIES_UNSPECIFIED;
+        image->transferCharacteristics = AVIF_TRANSFER_CHARACTERISTICS_UNSPECIFIED;
     } else {
         image->colorPrimaries = AVIF_COLOR_PRIMARIES_BT709;
         image->transferCharacteristics = AVIF_TRANSFER_CHARACTERISTICS_SRGB;
     }
+    image->matrixCoefficients = AVIF_MATRIX_COEFFICIENTS_BT601;
 
     size = PyBytes_GET_SIZE(exif_bytes);
     if (size) {
