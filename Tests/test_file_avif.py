@@ -706,13 +706,13 @@ class TestAvifAnimation:
             with Image.open("Tests/images/avif/rgba10.heif"):
                 pass
 
-    @pytest.mark.parametrize("alpha_premultipled", [False, True])
-    def test_alpha_premultiplied_true(self, alpha_premultipled: bool) -> None:
+    @pytest.mark.parametrize("alpha_premultiplied", [False, True])
+    def test_alpha_premultiplied_true(self, alpha_premultiplied: bool) -> None:
         im = Image.new("RGBA", (10, 10), (0, 0, 0, 0))
         im_buf = BytesIO()
-        im.save(im_buf, "AVIF", alpha_premultiplied=alpha_premultipled)
+        im.save(im_buf, "AVIF", alpha_premultiplied=alpha_premultiplied)
         im_bytes = im_buf.getvalue()
-        assert has_alpha_premultiplied(im_bytes) is alpha_premultipled
+        assert has_alpha_premultiplied(im_bytes) is alpha_premultiplied
 
     def test_timestamp_and_duration(self, tmp_path: Path) -> None:
         """
