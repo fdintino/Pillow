@@ -8,7 +8,6 @@ from collections.abc import Generator
 from contextlib import contextmanager
 from io import BytesIO
 from pathlib import Path
-from struct import unpack
 from typing import Any
 
 import pytest
@@ -73,39 +72,6 @@ def is_docker_qemu() -> bool:
         return False
     else:
         return "qemu" in init_proc_exe
-
-
-def has_alpha_premultiplied(im_bytes: bytes) -> bool:
-    stream = BytesIO(im_bytes)
-    length = len(im_bytes)
-    while stream.tell() < length:
-        start = stream.tell()
-        size, boxtype = unpack(">L4s", stream.read(8))
-        if not all(0x20 <= c <= 0x7E for c in boxtype):
-            # Not ascii
-            return False
-        if size == 1:  # 64bit size
-            (size,) = unpack(">Q", stream.read(8))
-        end = start + size
-        version, _ = unpack(">B3s", stream.read(4))
-        if boxtype in (b"ftyp", b"hdlr", b"pitm", b"iloc", b"iinf"):
-            # Skip these boxes
-            stream.seek(end)
-            continue
-        elif boxtype == b"meta":
-            # Container box possibly including iref prem, continue to parse boxes
-            # inside it
-            continue
-        elif boxtype == b"iref":
-            while stream.tell() < end:
-                _, iref_type = unpack(">L4s", stream.read(8))
-                version, _ = unpack(">B3s", stream.read(4))
-                if iref_type == b"prem":
-                    return True
-                stream.read(2 if version == 0 else 4)
-        else:
-            return False
-    return False
 
 
 class TestUnsupportedAvif:
@@ -707,12 +673,17 @@ class TestAvifAnimation:
                 pass
 
     @pytest.mark.parametrize("alpha_premultiplied", [False, True])
-    def test_alpha_premultiplied_true(self, alpha_premultiplied: bool) -> None:
-        im = Image.new("RGBA", (10, 10), (0, 0, 0, 0))
-        im_buf = BytesIO()
-        im.save(im_buf, "AVIF", alpha_premultiplied=alpha_premultiplied)
-        im_bytes = im_buf.getvalue()
-        assert has_alpha_premultiplied(im_bytes) is alpha_premultiplied
+    def test_alpha_premultiplied(
+        self, tmp_path: Path, alpha_premultiplied: bool
+    ) -> None:
+        temp_file = str(tmp_path / "temp.avif")
+        color = (200, 200, 200, 1)
+        im = Image.new("RGBA", (1, 1), color)
+        im.save(temp_file, alpha_premultiplied=alpha_premultiplied)
+
+        expected = (255, 255, 255, 1) if alpha_premultiplied else color
+        with Image.open(temp_file) as reloaded:
+            assert reloaded.getpixel((0, 0)) == expected
 
     def test_timestamp_and_duration(self, tmp_path: Path) -> None:
         """
