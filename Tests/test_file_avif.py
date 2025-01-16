@@ -605,7 +605,7 @@ class TestAvifAnimation:
     def test_write_animation_L(self, tmp_path: Path) -> None:
         """
         Convert an animated GIF to animated AVIF, then compare the frame
-        count, and first and last frames to ensure they're visually similar.
+        count, and first and second-to-last frames to ensure they're visually similar.
         """
 
         with Image.open("Tests/images/avif/star.gif") as orig:
