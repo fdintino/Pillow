@@ -582,11 +582,8 @@ class TestFileAvif:
 class TestAvifAnimation:
     @contextmanager
     def star_frames(self) -> Generator[list[ImageFile.ImageFile], None, None]:
-        with Image.open("Tests/images/avif/star.png") as f1:
-            with Image.open("Tests/images/avif/star90.png") as f2:
-                with Image.open("Tests/images/avif/star180.png") as f3:
-                    with Image.open("Tests/images/avif/star270.png") as f4:
-                        yield [f1, f2, f3, f4]
+        with Image.open("Tests/images/avif/star.png") as f:
+            yield [f, f.rotate(90), f.rotate(180), f.rotate(270)]
 
     def test_n_frames(self) -> None:
         """
