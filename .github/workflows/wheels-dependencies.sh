@@ -102,14 +102,14 @@ function build_libavif {
 
     python3 -m pip install meson ninja
 
-    if [[ "$PLAT" == "x86_64" ]]; then
+    if [[ "$PLAT" == "x86_64" ]] || [ -n "$SANITIZER" ]; then
         build_simple nasm 2.16.03 https://www.nasm.us/pub/nasm/releasebuilds/2.16.03
     fi
 
     # For rav1e
     curl https://sh.rustup.rs -sSf | sh -s -- -y
     . "$HOME/.cargo/env"
-    if [ -z "$IS_ALPINE" ] && [ -z "$IS_MACOS" ]; then
+    if [ -z "$IS_ALPINE" ] && [ -z "$SANITIZER" ] && [ -z "$IS_MACOS" ]; then
         yum install -y perl
         if [[ "$MB_ML_VER" == 2014 ]]; then
             yum install -y perl-IPC-Cmd
