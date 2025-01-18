@@ -255,10 +255,10 @@ class TestFileAvif:
 
     def test_save_icc_profile(self) -> None:
         with Image.open("Tests/images/avif/icc_profile_none.avif") as im:
-            assert im.info.get("icc_profile") is None
+            assert "icc_profile" not in im.info
 
             with Image.open("Tests/images/avif/icc_profile.avif") as with_icc:
-                expected_icc = with_icc.info.get("icc_profile")
+                expected_icc = with_icc.info["icc_profile"]
                 assert expected_icc is not None
 
                 im = roundtrip(im, icc_profile=expected_icc)
@@ -278,7 +278,7 @@ class TestFileAvif:
 
     def test_roundtrip_no_icc_profile(self) -> None:
         with Image.open("Tests/images/avif/icc_profile_none.avif") as im:
-            assert im.info.get("icc_profile") is None
+            assert "icc_profile" not in im.info
 
             im = roundtrip(im)
         assert "icc_profile" not in im.info
@@ -470,14 +470,14 @@ class TestFileAvif:
 
     @skip_unless_avif_encoder("aom")
     @skip_unless_feature("avif")
-    @pytest.mark.parametrize("val", [{"foo": "bar"}, 1234])
+    @pytest.mark.parametrize("advanced", [{"foo": "bar"}, 1234])
     def test_encoder_advanced_codec_options_invalid(
-        self, tmp_path: Path, val: dict[str, str] | int
+        self, tmp_path: Path, advanced: dict[str, str] | int
     ) -> None:
         with Image.open(TEST_AVIF_FILE) as im:
             test_file = str(tmp_path / "temp.avif")
             with pytest.raises(ValueError):
-                im.save(test_file, codec="aom", advanced=val)
+                im.save(test_file, codec="aom", advanced=advanced)
 
     @skip_unless_avif_decoder("aom")
     @skip_unless_feature("avif")
@@ -545,20 +545,20 @@ class TestFileAvif:
     def test_decoder_codec_available_invalid(self) -> None:
         assert _avif.decoder_codec_available("foo") is False
 
-    def test_p_mode_transparency(self) -> None:
+    def test_p_mode_transparency(self, tmp_path: Path) -> None:
         im = Image.new("P", size=(64, 64))
         draw = ImageDraw.Draw(im)
         draw.rectangle(xy=[(0, 0), (32, 32)], fill=255)
         draw.rectangle(xy=[(32, 32), (64, 64)], fill=255)
 
-        buf_png = BytesIO()
-        im.save(buf_png, format="PNG", transparency=0)
-        im_png = Image.open(buf_png)
-        buf_out = BytesIO()
-        im_png.save(buf_out, format="AVIF", quality=100)
+        out_png = str(tmp_path / "temp.png")
+        im.save(out_png, transparency=0)
+        with Image.open(out_png) as im_png:
+            out_avif = str(tmp_path / "temp.avif")
+            im_png.save(out_avif, quality=100)
 
-        with Image.open(buf_out) as expected:
-            assert_image_similar(im_png.convert("RGBA"), expected, 0.17)
+            with Image.open(out_avif) as expected:
+                assert_image_similar(im_png.convert("RGBA"), expected, 0.17)
 
     def test_decoder_strict_flags(self) -> None:
         # This would fail if full avif strictFlags were enabled
@@ -566,16 +566,14 @@ class TestFileAvif:
             assert im.size == (480, 270)
 
     @skip_unless_avif_encoder("aom")
-    def test_aom_optimizations(self) -> None:
-        im = hopper("RGB")
-        buf = BytesIO()
-        im.save(buf, format="AVIF", codec="aom", speed=1)
+    def test_aom_optimizations(self, tmp_path: Path) -> None:
+        test_file = str(tmp_path / "temp.avif")
+        hopper().save(test_file, codec="aom", speed=1)
 
     @skip_unless_avif_encoder("svt")
-    def test_svt_optimizations(self) -> None:
-        im = hopper("RGB")
-        buf = BytesIO()
-        im.save(buf, format="AVIF", codec="svt", speed=1)
+    def test_svt_optimizations(self, tmp_path: Path) -> None:
+        test_file = str(tmp_path / "temp.avif")
+        hopper().save(test_file, codec="svt", speed=1)
 
 
 @skip_unless_feature("avif")
@@ -599,7 +597,7 @@ class TestAvifAnimation:
             assert im.n_frames == 5
             assert im.is_animated
 
-    def test_write_animation_L(self, tmp_path: Path) -> None:
+    def test_write_animation_P(self, tmp_path: Path) -> None:
         """
         Convert an animated GIF to animated AVIF, then compare the frame
         count, and first and second-to-last frames to ensure they're visually similar.
@@ -613,15 +611,17 @@ class TestAvifAnimation:
             with Image.open(temp_file) as im:
                 assert im.n_frames == orig.n_frames
 
-                # Compare first and second-to-last frames to the original animated GIF
-                assert_image_similar(im.convert("RGB"), orig.convert("RGB"), 2.25)
+                # Compare first frame in P mode to frame from original GIF
+                assert_image_similar(im, orig.convert("RGBA"), 2)
+
+                # Compare second-to-last frame in RGBA mode to frame from original GIF
                 orig.seek(orig.n_frames - 2)
                 im.seek(im.n_frames - 2)
-                assert_image_similar(im.convert("RGB"), orig.convert("RGB"), 2.54)
+                assert_image_similar(im, orig, 2.54)
 
-    def test_write_animation_RGB(self, tmp_path: Path) -> None:
+    def test_write_animation_RGBA(self, tmp_path: Path) -> None:
         """
-        Write an animated AVIF from RGB frames, and ensure the frames
+        Write an animated AVIF from RGBA frames, and ensure the frames
         are visually similar to the originals.
         """
 
@@ -630,11 +630,11 @@ class TestAvifAnimation:
                 assert im.n_frames == 4
 
                 # Compare first frame to original
-                assert_image_similar(im, frame1.convert("RGBA"), 2.7)
+                assert_image_similar(im, frame1, 2.7)
 
                 # Compare second frame to original
                 im.seek(1)
-                assert_image_similar(im, frame2.convert("RGBA"), 4.1)
+                assert_image_similar(im, frame2, 4.1)
 
         with self.star_frames() as frames:
             frame1 = frames[0]
@@ -643,7 +643,7 @@ class TestAvifAnimation:
             frames[0].copy().save(temp_file1, save_all=True, append_images=frames[1:])
             check(temp_file1)
 
-            # Tests appending using a generator
+            # Test appending using a generator
             def imGenerator(
                 ims: list[ImageFile.ImageFile],
             ) -> Generator[ImageFile.ImageFile, None, None]:
