@@ -1364,7 +1364,7 @@ The :py:meth:`~PIL.Image.Image.save` method supports the following options:
     values are, the worse the quality.
 
 **quality**
-    Integer, 1-100, defaults to 75. 0 gives the smallest size and poorest
+    Integer, 0-100, defaults to 75. 0 gives the smallest size and poorest
     quality, 100 the largest and best quality. Setting "qmin" or "qmax" will override
     this.
 
