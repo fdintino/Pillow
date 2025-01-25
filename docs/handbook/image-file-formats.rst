@@ -1358,15 +1358,9 @@ as 8-bit RGB(A).
 
 The :py:meth:`~PIL.Image.Image.save` method supports the following options:
 
-**qmin** / **qmax**
-    Integer, 0-63. The quality of images created by an AVIF encoder are
-    controlled by minimum and maximum quantizer values. The higher these
-    values are, the worse the quality.
-
 **quality**
     Integer, 0-100, defaults to 75. 0 gives the smallest size and poorest
-    quality, 100 the largest and best quality. Setting "qmin" or "qmax" will override
-    this.
+    quality, 100 the largest and best quality.
 
 **subsampling**
     If present, sets the subsampling for the encoder. Defaults to ``4:2:0``.
