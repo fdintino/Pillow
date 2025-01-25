@@ -16,8 +16,7 @@ brew install \
     webp \
     dav1d \
     aom \
-    rav1e \
-    ninja
+    rav1e
 if [[ "$ImageOS" == "macos13" ]]; then
     brew install --ignore-dependencies libraqm
 else
