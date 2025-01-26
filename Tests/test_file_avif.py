@@ -421,7 +421,6 @@ class TestFileAvif:
                 im.save(test_file, range="foo")
 
     @skip_unless_avif_encoder("aom")
-    @skip_unless_feature("avif")
     def test_encoder_codec_param(self, tmp_path: Path) -> None:
         with Image.open(TEST_AVIF_FILE) as im:
             test_file = str(tmp_path / "temp.avif")
@@ -434,7 +433,6 @@ class TestFileAvif:
                 im.save(test_file, codec="foo")
 
     @skip_unless_avif_decoder("dav1d")
-    @skip_unless_feature("avif")
     def test_encoder_codec_cannot_encode(self, tmp_path: Path) -> None:
         with Image.open(TEST_AVIF_FILE) as im:
             test_file = str(tmp_path / "temp.avif")
@@ -442,7 +440,6 @@ class TestFileAvif:
                 im.save(test_file, codec="dav1d")
 
     @skip_unless_avif_encoder("aom")
-    @skip_unless_feature("avif")
     @pytest.mark.parametrize(
         "advanced",
         [
@@ -469,7 +466,6 @@ class TestFileAvif:
             assert ctrl_buf.getvalue() != test_buf.getvalue()
 
     @skip_unless_avif_encoder("aom")
-    @skip_unless_feature("avif")
     @pytest.mark.parametrize("advanced", [{"foo": "bar"}, 1234])
     def test_encoder_advanced_codec_options_invalid(
         self, tmp_path: Path, advanced: dict[str, str] | int
@@ -480,7 +476,6 @@ class TestFileAvif:
                 im.save(test_file, codec="aom", advanced=advanced)
 
     @skip_unless_avif_decoder("aom")
-    @skip_unless_feature("avif")
     def test_decoder_codec_param(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(AvifImagePlugin, "DECODE_CODEC_CHOICE", "aom")
 
@@ -488,7 +483,6 @@ class TestFileAvif:
             assert im.size == (128, 128)
 
     @skip_unless_avif_encoder("rav1e")
-    @skip_unless_feature("avif")
     def test_decoder_codec_cannot_decode(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
@@ -506,7 +500,6 @@ class TestFileAvif:
                 pass
 
     @skip_unless_avif_encoder("aom")
-    @skip_unless_feature("avif")
     def test_encoder_codec_available(self) -> None:
         assert _avif.encoder_codec_available("aom") is True
 
@@ -515,7 +508,6 @@ class TestFileAvif:
             _avif.encoder_codec_available()
 
     @skip_unless_avif_decoder("dav1d")
-    @skip_unless_feature("avif")
     def test_encoder_codec_available_cannot_decode(self) -> None:
         assert _avif.encoder_codec_available("dav1d") is False
 
@@ -529,7 +521,6 @@ class TestFileAvif:
                 im.save(test_file, quality="invalid")
 
     @skip_unless_avif_decoder("aom")
-    @skip_unless_feature("avif")
     def test_decoder_codec_available(self) -> None:
         assert _avif.decoder_codec_available("aom") is True
 
@@ -538,7 +529,6 @@ class TestFileAvif:
             _avif.decoder_codec_available()
 
     @skip_unless_avif_encoder("rav1e")
-    @skip_unless_feature("avif")
     def test_decoder_codec_available_cannot_decode(self) -> None:
         assert _avif.decoder_codec_available("rav1e") is False
 
@@ -703,13 +693,13 @@ class TestAvifAnimation:
             assert im.is_animated
 
             # Check that timestamps and durations match original values specified
-            ts = 0
+            timestamp = 0
             for frame in range(im.n_frames):
                 im.seek(frame)
                 im.load()
                 assert im.info["duration"] == durations[frame]
-                assert im.info["timestamp"] == ts
-                ts += durations[frame]
+                assert im.info["timestamp"] == timestamp
+                timestamp += durations[frame]
 
     def test_seeking(self, tmp_path: Path) -> None:
         """
@@ -717,14 +707,14 @@ class TestAvifAnimation:
         reverse-order, verifying the timestamps and durations are correct.
         """
 
-        dur = 33
+        duration = 33
         temp_file = str(tmp_path / "temp.avif")
         with self.star_frames() as frames:
             frames[0].save(
                 temp_file,
                 save_all=True,
                 append_images=(frames[1:] + [frames[0]]),
-                duration=dur,
+                duration=duration,
             )
 
         with Image.open(temp_file) as im:
@@ -732,13 +722,13 @@ class TestAvifAnimation:
             assert im.is_animated
 
             # Traverse frames in reverse, checking timestamps and durations
-            ts = dur * (im.n_frames - 1)
+            timestamp = duration * (im.n_frames - 1)
             for frame in reversed(range(im.n_frames)):
                 im.seek(frame)
                 im.load()
-                assert im.info["duration"] == dur
-                assert im.info["timestamp"] == ts
-                ts -= dur
+                assert im.info["duration"] == duration
+                assert im.info["timestamp"] == timestamp
+                timestamp -= duration
 
     def test_seek_errors(self) -> None:
         with Image.open("Tests/images/avif/star.avifs") as im:
