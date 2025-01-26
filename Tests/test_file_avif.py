@@ -313,7 +313,7 @@ class TestFileAvif:
             else:
                 assert reloaded.info["exif"] == exif_data
 
-    def test_exif_without_orientation(self, tmp_path: Path):
+    def test_exif_without_orientation(self, tmp_path: Path) -> None:
         exif = Image.Exif()
         exif[272] = b"test"
         exif_data = exif.tobytes()
@@ -570,7 +570,7 @@ class TestFileAvif:
 @skip_unless_feature("avif")
 class TestAvifAnimation:
     @contextmanager
-    def star_frames(self) -> Generator[list[ImageFile.ImageFile], None, None]:
+    def star_frames(self) -> Generator[list[Image.Image], None, None]:
         with Image.open("Tests/images/avif/star.png") as f:
             yield [f, f.rotate(90), f.rotate(180), f.rotate(270)]
 
@@ -636,8 +636,8 @@ class TestAvifAnimation:
 
             # Test appending using a generator
             def imGenerator(
-                ims: list[ImageFile.ImageFile],
-            ) -> Generator[ImageFile.ImageFile, None, None]:
+                ims: list[Image.Image],
+            ) -> Generator[Image.Image, None, None]:
                 yield from ims
 
             temp_file2 = str(tmp_path / "temp_generator.avif")

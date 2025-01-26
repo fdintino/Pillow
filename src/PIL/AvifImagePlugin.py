@@ -45,7 +45,7 @@ def _accept(prefix: bytes) -> bool | str:
     return False
 
 
-def _get_default_max_threads():
+def _get_default_max_threads() -> int:
     if DEFAULT_MAX_THREADS:
         return DEFAULT_MAX_THREADS
     if hasattr(os, "sched_getaffinity"):
