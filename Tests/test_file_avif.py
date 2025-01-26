@@ -556,9 +556,10 @@ class TestFileAvif:
             assert im.size == (480, 270)
 
     @skip_unless_avif_encoder("aom")
-    def test_aom_optimizations(self, tmp_path: Path) -> None:
+    @pytest.mark.parametrize("speed", [-1, 1, 11])
+    def test_aom_optimizations(self, tmp_path: Path, speed: int) -> None:
         test_file = str(tmp_path / "temp.avif")
-        hopper().save(test_file, codec="aom", speed=1)
+        hopper().save(test_file, codec="aom", speed=speed)
 
     @skip_unless_avif_encoder("svt")
     def test_svt_optimizations(self, tmp_path: Path) -> None:
