@@ -70,10 +70,10 @@ irot_imir_to_exif_orientation(const avifImage *image) {
 #else
     axis = image->imir.mode;
 #endif
-    uint8_t angle = image->irot.angle;
     int imir = image->transformFlags & AVIF_TRANSFORM_IMIR;
     int irot = image->transformFlags & AVIF_TRANSFORM_IROT;
     if (irot) {
+        uint8_t angle = image->irot.angle;
         if (angle == 1) {
             if (imir) {
                 return axis ? 7   // 90 degrees anti-clockwise then swap left and right.
