@@ -24,6 +24,7 @@ typedef struct {
 
 static PyTypeObject AvifDecoder_Type;
 
+#if AVIF_VERSION < 1000000
 static int
 normalize_quantize_value(int qvalue) {
     if (qvalue < AVIF_QUANTIZER_BEST_QUALITY) {
@@ -34,6 +35,7 @@ normalize_quantize_value(int qvalue) {
         return qvalue;
     }
 }
+#endif
 
 static int
 normalize_tiles_log2(int value) {
