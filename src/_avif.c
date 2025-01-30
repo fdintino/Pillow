@@ -777,15 +777,15 @@ _decoder_get_info(AvifDecoderObject *self) {
     }
 
     ret = Py_BuildValue(
-        "IIIsSSSI",
+        "IIIsSSIS",
         image->width,
         image->height,
         decoder->imageCount,
         self->mode,
         NULL == icc ? Py_None : icc,
         NULL == exif ? Py_None : exif,
-        NULL == xmp ? Py_None : xmp,
-        irot_imir_to_exif_orientation(image)
+        irot_imir_to_exif_orientation(image),
+        NULL == xmp ? Py_None : xmp
     );
 
     Py_XDECREF(xmp);
