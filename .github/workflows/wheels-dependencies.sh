@@ -125,9 +125,9 @@ function build_libavif {
             -DBUILD_SHARED_LIBS=OFF \
             -DAVIF_LIBSHARPYUV=LOCAL \
             -DAVIF_LIBYUV=LOCAL \
-            -DAVIF_CODEC_RAV1E=LOCAL \
             -DAVIF_CODEC_AOM=LOCAL \
             -DAVIF_CODEC_DAV1D=LOCAL \
+            -DAVIF_CODEC_RAV1E=LOCAL \
             -DAVIF_CODEC_SVT=LOCAL \
             -DENABLE_NASM=ON \
             -DCMAKE_MODULE_PATH=/tmp/cmake/Modules \

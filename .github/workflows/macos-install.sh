@@ -14,8 +14,8 @@ brew install \
     little-cms2 \
     openjpeg \
     webp \
-    dav1d \
     aom \
+    dav1d \
     rav1e \
     svt-av1
 if [[ "$ImageOS" == "macos13" ]]; then
