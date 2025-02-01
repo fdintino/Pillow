@@ -425,7 +425,7 @@ class TestFileAvif:
                 im.save(test_file, codec="foo")
 
     @skip_unless_avif_decoder("dav1d")
-    def test_encoder_codec_cannot_encode(self, tmp_path: Path) -> None:
+    def test_decoder_codec_cannot_encode(self, tmp_path: Path) -> None:
         with Image.open(TEST_AVIF_FILE) as im:
             test_file = str(tmp_path / "temp.avif")
             with pytest.raises(ValueError):
@@ -475,7 +475,7 @@ class TestFileAvif:
             assert im.size == (128, 128)
 
     @skip_unless_avif_encoder("rav1e")
-    def test_decoder_codec_cannot_decode(
+    def test_encoder_codec_cannot_decode(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
         monkeypatch.setattr(AvifImagePlugin, "DECODE_CODEC_CHOICE", "rav1e")
