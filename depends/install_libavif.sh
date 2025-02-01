@@ -7,7 +7,7 @@ version=1.1.1
 
 pushd libavif-$version
 
-if [ $(uname) == "Darwin" ]; then
+if [ $(uname) == "Darwin" ] && [ -x "$(command -v brew)" ]; then
     PREFIX=$(brew --prefix)
 else
     PREFIX=/usr
