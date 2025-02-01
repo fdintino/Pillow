@@ -188,6 +188,8 @@ class TestFileAvif:
         with Image.open(TEST_AVIF_FILE) as im:
             temp_file = str(tmp_path / "temp.avif")
             with warnings.catch_warnings():
+                warnings.simplefilter("error")
+
                 im.save(temp_file)
 
     @pytest.mark.parametrize("major_brand", [b"avif", b"avis", b"mif1", b"msf1"])
