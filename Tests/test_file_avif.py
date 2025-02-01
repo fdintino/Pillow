@@ -70,8 +70,7 @@ def is_docker_qemu() -> bool:
         init_proc_exe = os.readlink("/proc/1/exe")
     except (FileNotFoundError, PermissionError):
         return False
-    else:
-        return "qemu" in init_proc_exe
+    return "qemu" in init_proc_exe
 
 
 class TestUnsupportedAvif:
@@ -116,36 +115,32 @@ class TestFileAvif:
                 image, "Tests/images/avif/hopper_avif_write.png", 11.5
             )
 
-    def _roundtrip(self, tmp_path: Path, mode: str, epsilon: float) -> None:
-        temp_file = str(tmp_path / "temp.avif")
-
-        hopper(mode).save(temp_file)
-        with Image.open(temp_file) as image:
-            assert image.mode == "RGB"
-            assert image.size == (128, 128)
-            assert image.format == "AVIF"
-            image.getdata()
-
-            if mode == "RGB":
-                # avifdec hopper.avif avif/hopper_avif_write.png
-                assert_image_similar_tofile(
-                    image, "Tests/images/avif/hopper_avif_write.png", 6.02
-                )
-
-            # This test asserts that the images are similar. If the average pixel
-            # difference between the two images is less than the epsilon value,
-            # then we're going to accept that it's a reasonable lossy version of
-            # the image.
-            expected = hopper()
-            assert_image_similar(image, expected, epsilon)
-
     def test_write_rgb(self, tmp_path: Path) -> None:
         """
         Can we write a RGB mode file to avif without error?
         Does it have the bits we expect?
         """
 
-        self._roundtrip(tmp_path, "RGB", 8.62)
+        temp_file = str(tmp_path / "temp.avif")
+
+        im = hopper()
+        im.save(temp_file)
+        with Image.open(temp_file) as reloaded:
+            assert reloaded.mode == "RGB"
+            assert reloaded.size == (128, 128)
+            assert reloaded.format == "AVIF"
+            reloaded.getdata()
+
+            # avifdec hopper.avif avif/hopper_avif_write.png
+            assert_image_similar_tofile(
+                reloaded, "Tests/images/avif/hopper_avif_write.png", 6.02
+            )
+
+            # This test asserts that the images are similar. If the average pixel
+            # difference between the two images is less than the epsilon value,
+            # then we're going to accept that it's a reasonable lossy version of
+            # the image.
+            assert_image_similar(reloaded, im, 8.62)
 
     def test_AvifEncoder_with_invalid_args(self) -> None:
         """
@@ -186,11 +181,10 @@ class TestFileAvif:
 
     def test_no_resource_warning(self, tmp_path: Path) -> None:
         with Image.open(TEST_AVIF_FILE) as im:
-            temp_file = str(tmp_path / "temp.avif")
             with warnings.catch_warnings():
                 warnings.simplefilter("error")
 
-                im.save(temp_file)
+                im.save(tmp_path / "temp.avif")
 
     @pytest.mark.parametrize("major_brand", [b"avif", b"avis", b"mif1", b"msf1"])
     def test_accept_ftyp_brands(self, major_brand: bytes) -> None:
@@ -349,17 +343,13 @@ class TestFileAvif:
         self, rot: int, mir: int, exif_orientation: int, tmp_path: Path
     ) -> None:
         with Image.open(f"Tests/images/avif/rot{rot}mir{mir}.avif") as im:
-            exif = im.info["exif"]
+            exif = im.getexif()
+            assert exif[274] == exif_orientation
+
             test_file = str(tmp_path / "temp.avif")
             im.save(test_file, exif=exif)
-
-            exif_data = Image.Exif()
-            exif_data.load(exif)
-            assert exif_data[274] == exif_orientation
         with Image.open(test_file) as reloaded:
-            exif_data = Image.Exif()
-            exif_data.load(reloaded.info["exif"])
-            assert exif_data[274] == exif_orientation
+            assert reloaded.getexif()[274] == exif_orientation
 
     def test_xmp(self) -> None:
         with Image.open("Tests/images/avif/xmp_tags_orientation.avif") as im:
