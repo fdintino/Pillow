@@ -7,9 +7,6 @@
 typedef struct {
     PyObject_HEAD avifEncoder *encoder;
     avifImage *image;
-    PyObject *icc_bytes;
-    PyObject *exif_bytes;
-    PyObject *xmp_bytes;
     int frame_index;
 } AvifEncoderObject;
 
@@ -18,7 +15,7 @@ static PyTypeObject AvifEncoder_Type;
 // Decoder type
 typedef struct {
     PyObject_HEAD avifDecoder *decoder;
-    PyObject *data;
+    Py_buffer buffer;
     char *mode;
 } AvifDecoderObject;
 
@@ -240,9 +237,9 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
     int speed;
     int exif_orientation;
     int max_threads;
-    PyObject *icc_bytes;
-    PyObject *exif_bytes;
-    PyObject *xmp_bytes;
+    Py_buffer icc_buffer;
+    Py_buffer exif_buffer;
+    Py_buffer xmp_buffer;
     PyObject *alpha_premultiplied;
     PyObject *autotiling;
     int tile_rows_log2;
@@ -255,7 +252,7 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
 
     if (!PyArg_ParseTuple(
             args,
-            "IIsiiissiiOOSSiSO",
+            "IIsiiissiiOOy*y*iy*O",
             &width,
             &height,
             &subsampling,
@@ -268,10 +265,10 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
             &tile_cols_log2,
             &alpha_premultiplied,
             &autotiling,
-            &icc_bytes,
-            &exif_bytes,
+            &icc_buffer,
+            &exif_buffer,
             &exif_orientation,
-            &xmp_bytes,
+            &xmp_buffer,
             &advanced
         )) {
         return NULL;
@@ -376,19 +373,10 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
         return NULL;
     }
     self->frame_index = -1;
-    self->icc_bytes = NULL;
-    self->exif_bytes = NULL;
-    self->xmp_bytes = NULL;
 
     avifResult result;
-    Py_ssize_t size = PyBytes_GET_SIZE(icc_bytes);
-    if (size) {
-        self->icc_bytes = icc_bytes;
-        Py_INCREF(icc_bytes);
-
-        result = avifImageSetProfileICC(
-            image, (uint8_t *)PyBytes_AS_STRING(icc_bytes), size
-        );
+    if (icc_buffer.len) {
+        result = avifImageSetProfileICC(image, icc_buffer.buf, icc_buffer.len);
         if (result != AVIF_RESULT_OK) {
             PyErr_Format(
                 exc_type_for_avif_result(result),
@@ -397,7 +385,9 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
             );
             avifImageDestroy(image);
             avifEncoderDestroy(encoder);
-            Py_XDECREF(self->icc_bytes);
+            PyBuffer_Release(&icc_buffer);
+            PyBuffer_Release(&exif_buffer);
+            PyBuffer_Release(&xmp_buffer);
             PyObject_Del(self);
             return NULL;
         }
@@ -410,15 +400,10 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
         image->transferCharacteristics = AVIF_TRANSFER_CHARACTERISTICS_SRGB;
     }
     image->matrixCoefficients = AVIF_MATRIX_COEFFICIENTS_BT601;
+    PyBuffer_Release(&icc_buffer);
 
-    size = PyBytes_GET_SIZE(exif_bytes);
-    if (size) {
-        self->exif_bytes = exif_bytes;
-        Py_INCREF(exif_bytes);
-
-        result = avifImageSetMetadataExif(
-            image, (uint8_t *)PyBytes_AS_STRING(exif_bytes), size
-        );
+    if (exif_buffer.len) {
+        result = avifImageSetMetadataExif(image, exif_buffer.buf, exif_buffer.len);
         if (result != AVIF_RESULT_OK) {
             PyErr_Format(
                 exc_type_for_avif_result(result),
@@ -427,21 +412,16 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
             );
             avifImageDestroy(image);
             avifEncoderDestroy(encoder);
-            Py_XDECREF(self->icc_bytes);
-            Py_XDECREF(self->exif_bytes);
+            PyBuffer_Release(&exif_buffer);
+            PyBuffer_Release(&xmp_buffer);
             PyObject_Del(self);
             return NULL;
         }
     }
+    PyBuffer_Release(&exif_buffer);
 
-    size = PyBytes_GET_SIZE(xmp_bytes);
-    if (size) {
-        self->xmp_bytes = xmp_bytes;
-        Py_INCREF(xmp_bytes);
-
-        result = avifImageSetMetadataXMP(
-            image, (uint8_t *)PyBytes_AS_STRING(xmp_bytes), size
-        );
+    if (xmp_buffer.len) {
+        result = avifImageSetMetadataXMP(image, xmp_buffer.buf, xmp_buffer.len);
         if (result != AVIF_RESULT_OK) {
             PyErr_Format(
                 exc_type_for_avif_result(result),
@@ -450,13 +430,13 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
             );
             avifImageDestroy(image);
             avifEncoderDestroy(encoder);
-            Py_XDECREF(self->icc_bytes);
-            Py_XDECREF(self->exif_bytes);
-            Py_XDECREF(self->xmp_bytes);
+            PyBuffer_Release(&xmp_buffer);
             PyObject_Del(self);
             return NULL;
         }
     }
+    PyBuffer_Release(&xmp_buffer);
+
     if (exif_orientation > 1) {
         exif_orientation_to_irot_imir(image, exif_orientation);
     }
@@ -475,9 +455,6 @@ _encoder_dealloc(AvifEncoderObject *self) {
     if (self->image) {
         avifImageDestroy(self->image);
     }
-    Py_XDECREF(self->icc_bytes);
-    Py_XDECREF(self->exif_bytes);
-    Py_XDECREF(self->xmp_bytes);
     Py_RETURN_NONE;
 }
 
@@ -664,7 +641,7 @@ _encoder_finish(AvifEncoderObject *self) {
 // Decoder functions
 PyObject *
 AvifDecoderNew(PyObject *self_, PyObject *args) {
-    PyObject *avif_bytes;
+    Py_buffer buffer;
     AvifDecoderObject *self = NULL;
     avifDecoder *decoder;
 
@@ -674,7 +651,7 @@ AvifDecoderNew(PyObject *self_, PyObject *args) {
 
     avifResult result;
 
-    if (!PyArg_ParseTuple(args, "Ssi", &avif_bytes, &codec_str, &max_threads)) {
+    if (!PyArg_ParseTuple(args, "y*si", &buffer, &codec_str, &max_threads)) {
         return NULL;
     }
 
@@ -687,11 +664,9 @@ AvifDecoderNew(PyObject *self_, PyObject *args) {
     self = PyObject_New(AvifDecoderObject, &AvifDecoder_Type);
     if (!self) {
         PyErr_SetString(PyExc_RuntimeError, "could not create decoder object");
+        PyBuffer_Release(&buffer);
         return NULL;
     }
-
-    Py_INCREF(avif_bytes);
-    self->data = avif_bytes;
 
     decoder = avifDecoderCreate();
 #if AVIF_VERSION >= 80400
@@ -707,9 +682,7 @@ AvifDecoderNew(PyObject *self_, PyObject *args) {
 #endif
     decoder->codecChoice = codec;
 
-    result = avifDecoderSetIOMemory(
-        decoder, (uint8_t *)PyBytes_AS_STRING(self->data), PyBytes_GET_SIZE(self->data)
-    );
+    result = avifDecoderSetIOMemory(decoder, buffer.buf, buffer.len);
     if (result != AVIF_RESULT_OK) {
         PyErr_Format(
             exc_type_for_avif_result(result),
@@ -717,6 +690,7 @@ AvifDecoderNew(PyObject *self_, PyObject *args) {
             avifResultToString(result)
         );
         avifDecoderDestroy(decoder);
+        PyBuffer_Release(&buffer);
         PyObject_Del(self);
         return NULL;
     }
@@ -729,6 +703,7 @@ AvifDecoderNew(PyObject *self_, PyObject *args) {
             avifResultToString(result)
         );
         avifDecoderDestroy(decoder);
+        PyBuffer_Release(&buffer);
         PyObject_Del(self);
         return NULL;
     }
@@ -740,6 +715,7 @@ AvifDecoderNew(PyObject *self_, PyObject *args) {
     }
 
     self->decoder = decoder;
+    self->buffer = buffer;
 
     return (PyObject *)self;
 }
@@ -749,7 +725,7 @@ _decoder_dealloc(AvifDecoderObject *self) {
     if (self->decoder) {
         avifDecoderDestroy(self->decoder);
     }
-    Py_XDECREF(self->data);
+    PyBuffer_Release(&self->buffer);
     Py_RETURN_NONE;
 }
 
