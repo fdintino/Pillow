@@ -252,7 +252,7 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
 
     if (!PyArg_ParseTuple(
             args,
-            "IIsiiissiiOOy*y*iy*O",
+            "(II)siiissiiOOy*y*iy*O",
             &width,
             &height,
             &subsampling,
@@ -479,7 +479,7 @@ _encoder_add(AvifEncoderObject *self, PyObject *args) {
 
     if (!PyArg_ParseTuple(
             args,
-            "z#IIIsO",
+            "z#I(II)sO",
             (char **)&rgb_bytes,
             &size,
             &duration,

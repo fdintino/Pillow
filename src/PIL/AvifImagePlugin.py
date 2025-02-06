@@ -212,8 +212,7 @@ def _save(
 
     # Setup the AVIF encoder
     enc = _avif.AvifEncoder(
-        im.size[0],
-        im.size[1],
+        im.size,
         subsampling,
         quality,
         speed,
@@ -260,8 +259,7 @@ def _save(
                 enc.add(
                     frame.tobytes("raw", rawmode),
                     frame_dur,
-                    frame.size[0],
-                    frame.size[1],
+                    frame.size,
                     rawmode,
                     is_single_frame,
                 )
