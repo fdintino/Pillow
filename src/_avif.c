@@ -708,11 +708,7 @@ AvifDecoderNew(PyObject *self_, PyObject *args) {
         return NULL;
     }
 
-    if (decoder->alphaPresent) {
-        self->mode = "RGBA";
-    } else {
-        self->mode = "RGB";
-    }
+    self->mode = decoder->alphaPresent == AVIF_TRUE ? "RGBA" : "RGB";
 
     self->decoder = decoder;
     self->buffer = buffer;
@@ -806,7 +802,7 @@ _decoder_get_frame(AvifDecoderObject *self, PyObject *args) {
 
     rgb.depth = 8;
 
-    if (decoder->alphaPresent) {
+    if (decoder->alphaPresent == AVIF_TRUE) {
         rgb.format = AVIF_RGB_FORMAT_RGBA;
     } else {
         rgb.format = AVIF_RGB_FORMAT_RGB;

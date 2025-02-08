@@ -16,6 +16,7 @@ except ImportError:
 # Decoder options as module globals, until there is a way to pass parameters
 # to Image.open (see https://github.com/python-pillow/Pillow/issues/569)
 DECODE_CODEC_CHOICE = "auto"
+# Decoding is only affected by this for libavif **0.8.4** or greater.
 DEFAULT_MAX_THREADS = 0
 
 
@@ -113,11 +114,11 @@ class AvifImageFile(ImageFile.ImageFile):
     def load(self) -> Image.core.PixelAccess | None:
         if self.tile:
             # We need to load the image data for this frame
-            data, timescale, tsp_in_ts, dur_in_ts = self._decoder.get_frame(
-                self.__frame
+            data, timescale, pts_in_timescales, dur_in_timescales = (
+                self._decoder.get_frame(self.__frame)
             )
-            self.info["timestamp"] = round(1000 * (tsp_in_ts / timescale))
-            self.info["duration"] = round(1000 * (dur_in_ts / timescale))
+            self.info["timestamp"] = round(1000 * (pts_in_timescales / timescale))
+            self.info["duration"] = round(1000 * (dur_in_timescales / timescale))
 
             # Set tile
             if self.fp and self._exclusive_fp:
