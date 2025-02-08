@@ -154,7 +154,7 @@ exif_orientation_to_irot_imir(avifImage *image, int orientation) {
 }
 
 static int
-_codec_available(const char *name, uint32_t flags) {
+_codec_available(const char *name, avifCodecFlags flags) {
     avifCodecChoice codec = avifCodecChoiceFromName(name);
     if (codec == AVIF_CODEC_CHOICE_AUTO) {
         return 0;
