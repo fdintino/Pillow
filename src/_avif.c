@@ -793,7 +793,7 @@ _decoder_get_frame(AvifDecoderObject *self, PyObject *args) {
         PyErr_Format(
             exc_type_for_avif_result(result),
             "Failed to decode frame %u: %s",
-            decoder->imageIndex + 1,
+            frame_index,
             avifResultToString(result)
         );
         return NULL;
