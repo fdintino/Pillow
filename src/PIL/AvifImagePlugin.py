@@ -61,10 +61,7 @@ class AvifImageFile(ImageFile.ImageFile):
 
     def _open(self) -> None:
         if not SUPPORTED:
-            msg = (
-                "image file could not be identified because AVIF "
-                "support not installed"
-            )
+            msg = "image file could not be opened because AVIF support not installed"
             raise SyntaxError(msg)
 
         if DECODE_CODEC_CHOICE != "auto" and not _avif.decoder_codec_available(
