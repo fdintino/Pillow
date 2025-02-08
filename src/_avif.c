@@ -794,13 +794,8 @@ _decoder_get_frame(AvifDecoderObject *self, PyObject *args) {
     avifRGBImageSetDefaults(&rgb, image);
 
     rgb.depth = 8;
-
-    if (decoder->alphaPresent == AVIF_TRUE) {
-        rgb.format = AVIF_RGB_FORMAT_RGBA;
-    } else {
-        rgb.format = AVIF_RGB_FORMAT_RGB;
-        rgb.ignoreAlpha = AVIF_TRUE;
-    }
+    rgb.format =
+        decoder->alphaPresent == AVIF_TRUE ? AVIF_RGB_FORMAT_RGBA : AVIF_RGB_FORMAT_RGB;
 
     result = avifRGBImageAllocatePixels(&rgb);
     if (result != AVIF_RESULT_OK) {
