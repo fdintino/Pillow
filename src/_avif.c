@@ -7,7 +7,7 @@
 typedef struct {
     PyObject_HEAD avifEncoder *encoder;
     avifImage *image;
-    int frame_index;
+    int first_frame;
 } AvifEncoderObject;
 
 static PyTypeObject AvifEncoder_Type;
@@ -371,7 +371,7 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
         avifEncoderDestroy(encoder);
         return NULL;
     }
-    self->frame_index = -1;
+    self->first_frame = 1;
 
     avifResult result;
     if (icc_buffer.len) {
@@ -468,7 +468,6 @@ _encoder_add(AvifEncoderObject *self, PyObject *args) {
     PyObject *is_single_frame = NULL;
     PyObject *ret = Py_None;
 
-    int is_first_frame;
     avifRGBImage rgb;
     avifResult result;
 
@@ -490,8 +489,6 @@ _encoder_add(AvifEncoderObject *self, PyObject *args) {
         return NULL;
     }
 
-    is_first_frame = self->frame_index == -1;
-
     if (image->width != width || image->height != height) {
         PyErr_Format(
             PyExc_ValueError,
@@ -504,7 +501,7 @@ _encoder_add(AvifEncoderObject *self, PyObject *args) {
         return NULL;
     }
 
-    if (is_first_frame) {
+    if (self->first_frame) {
         // If we don't have an image populated with yuv planes, this is the first frame
         frame = image;
     } else {
@@ -596,12 +593,12 @@ _encoder_add(AvifEncoderObject *self, PyObject *args) {
 
 end:
     avifRGBImageFreePixels(&rgb);
-    if (!is_first_frame) {
+    if (!self->first_frame) {
         avifImageDestroy(frame);
     }
 
     if (ret == Py_None) {
-        self->frame_index++;
+        self->first_frame = 0;
         Py_RETURN_NONE;
     } else {
         return ret;
