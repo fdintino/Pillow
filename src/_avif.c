@@ -465,7 +465,7 @@ _encoder_add(AvifEncoderObject *self, PyObject *args) {
     unsigned int width;
     unsigned int height;
     char *mode;
-    PyObject *is_single_frame = NULL;
+    unsigned int is_single_frame;
     PyObject *ret = Py_None;
 
     avifRGBImage rgb;
@@ -477,7 +477,7 @@ _encoder_add(AvifEncoderObject *self, PyObject *args) {
 
     if (!PyArg_ParseTuple(
             args,
-            "y#I(II)sO",
+            "y#I(II)sp",
             (char **)&rgb_bytes,
             &size,
             &duration,
@@ -573,7 +573,7 @@ _encoder_add(AvifEncoderObject *self, PyObject *args) {
     }
 
     uint32_t addImageFlags = AVIF_ADD_IMAGE_FLAG_NONE;
-    if (PyObject_IsTrue(is_single_frame)) {
+    if (is_single_frame) {
         addImageFlags |= AVIF_ADD_IMAGE_FLAG_SINGLE;
     }
 
