@@ -230,7 +230,7 @@ def _save(
 
     # Add each frame
     frame_idx = 0
-    frame_dur = 0
+    frame_duration = 0
     cur_idx = im.tell()
     try:
         for ims in [im] + append_images:
@@ -249,14 +249,14 @@ def _save(
 
                 # Update frame duration
                 if isinstance(duration, (list, tuple)):
-                    frame_dur = duration[frame_idx]
+                    frame_duration = duration[frame_idx]
                 else:
-                    frame_dur = duration
+                    frame_duration = duration
 
                 # Append the frame to the animation encoder
                 enc.add(
                     frame.tobytes("raw", rawmode),
-                    frame_dur,
+                    frame_duration,
                     frame.size,
                     rawmode,
                     is_single_frame,

@@ -16,7 +16,6 @@ static PyTypeObject AvifEncoder_Type;
 typedef struct {
     PyObject_HEAD avifDecoder *decoder;
     Py_buffer buffer;
-    char *mode;
 } AvifDecoderObject;
 
 static PyTypeObject AvifDecoder_Type;
@@ -708,8 +707,6 @@ AvifDecoderNew(PyObject *self_, PyObject *args) {
         return NULL;
     }
 
-    self->mode = decoder->alphaPresent == AVIF_TRUE ? "RGBA" : "RGB";
-
     self->decoder = decoder;
     self->buffer = buffer;
 
@@ -753,7 +750,7 @@ _decoder_get_info(AvifDecoderObject *self) {
         image->width,
         image->height,
         decoder->imageCount,
-        self->mode,
+        decoder->alphaPresent == AVIF_TRUE ? "RGBA" : "RGB",
         NULL == icc ? Py_None : icc,
         NULL == exif ? Py_None : exif,
         irot_imir_to_exif_orientation(image),
