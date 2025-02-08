@@ -791,7 +791,6 @@ _decoder_get_frame(AvifDecoderObject *self, PyObject *args) {
 
     image = decoder->image;
 
-    memset(&rgb, 0, sizeof(rgb));
     avifRGBImageSetDefaults(&rgb, image);
 
     rgb.depth = 8;
