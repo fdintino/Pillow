@@ -77,10 +77,9 @@ class AvifImageFile(ImageFile.ImageFile):
         )
 
         # Get info from decoder
-        width, height, n_frames, mode, icc, exif, exif_orientation, xmp = (
+        self._size, n_frames, mode, icc, exif, exif_orientation, xmp = (
             self._decoder.get_info()
         )
-        self._size = width, height
         self.n_frames = n_frames
         self.is_animated = self.n_frames > 1
         self._mode = mode

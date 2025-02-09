@@ -743,7 +743,7 @@ _decoder_get_info(AvifDecoderObject *self) {
     }
 
     ret = Py_BuildValue(
-        "IIIsSSIS",
+        "(II)IsSSIS",
         image->width,
         image->height,
         decoder->imageCount,
