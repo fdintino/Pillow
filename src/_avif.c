@@ -875,7 +875,6 @@ static struct PyMethodDef _decoder_methods[] = {
 static PyTypeObject AvifDecoder_Type = {
     PyVarObject_HEAD_INIT(NULL, 0).tp_name = "AvifDecoder",
     .tp_basicsize = sizeof(AvifDecoderObject),
-    .tp_itemsize = 0,
     .tp_dealloc = (destructor)_decoder_dealloc,
     .tp_flags = Py_TPFLAGS_DEFAULT,
     .tp_methods = _decoder_methods,
