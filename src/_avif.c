@@ -521,7 +521,6 @@ _encoder_add(AvifEncoderObject *self, PyObject *args) {
     }
 
     avifRGBImageSetDefaults(&rgb, frame);
-    rgb.depth = 8;
 
     if (strcmp(mode, "RGBA") == 0) {
         rgb.format = AVIF_RGB_FORMAT_RGBA;
@@ -542,7 +541,7 @@ _encoder_add(AvifEncoderObject *self, PyObject *args) {
     if (rgb.rowBytes * rgb.height != size) {
         PyErr_Format(
             PyExc_RuntimeError,
-            "rgb data is incorrect size: %u * %u (%u) != %u",
+            "rgb data has incorrect size: %u * %u (%u) != %u",
             rgb.rowBytes,
             rgb.height,
             rgb.rowBytes * rgb.height,
@@ -569,10 +568,8 @@ _encoder_add(AvifEncoderObject *self, PyObject *args) {
         goto end;
     }
 
-    uint32_t addImageFlags = AVIF_ADD_IMAGE_FLAG_NONE;
-    if (is_single_frame) {
-        addImageFlags |= AVIF_ADD_IMAGE_FLAG_SINGLE;
-    }
+    uint32_t addImageFlags =
+        is_single_frame ? AVIF_ADD_IMAGE_FLAG_SINGLE : AVIF_ADD_IMAGE_FLAG_NONE;
 
     Py_BEGIN_ALLOW_THREADS;
     result = avifEncoderAddImage(encoder, frame, duration, addImageFlags);
