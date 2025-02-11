@@ -466,7 +466,7 @@ _encoder_add(AvifEncoderObject *self, PyObject *args) {
     unsigned int height;
     char *mode;
     unsigned int is_single_frame;
-    PyObject *ret = Py_None;
+    int error = 0;
 
     avifRGBImage rgb;
     avifResult result;
@@ -547,7 +547,7 @@ _encoder_add(AvifEncoderObject *self, PyObject *args) {
             rgb.rowBytes * rgb.height,
             size
         );
-        ret = NULL;
+        error = 1;
         goto end;
     }
 
@@ -564,7 +564,7 @@ _encoder_add(AvifEncoderObject *self, PyObject *args) {
             "Conversion to YUV failed: %s",
             avifResultToString(result)
         );
-        ret = NULL;
+        error = 1;
         goto end;
     }
 
@@ -581,7 +581,7 @@ _encoder_add(AvifEncoderObject *self, PyObject *args) {
             "Failed to encode image: %s",
             avifResultToString(result)
         );
-        ret = NULL;
+        error = 1;
         goto end;
     }
 
@@ -591,12 +591,11 @@ end:
         avifImageDestroy(frame);
     }
 
-    if (ret == Py_None) {
-        self->first_frame = 0;
-        Py_RETURN_NONE;
-    } else {
-        return ret;
+    if (error) {
+        return NULL;
     }
+    self->first_frame = 0;
+    Py_RETURN_NONE;
 }
 
 PyObject *
