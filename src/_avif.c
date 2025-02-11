@@ -535,7 +535,8 @@ _encoder_add(AvifEncoderObject *self, PyObject *args) {
             "Pixel allocation failed: %s",
             avifResultToString(result)
         );
-        return NULL;
+        error = 1;
+        goto end;
     }
 
     if (rgb.rowBytes * rgb.height != size) {
@@ -586,7 +587,9 @@ _encoder_add(AvifEncoderObject *self, PyObject *args) {
     }
 
 end:
-    avifRGBImageFreePixels(&rgb);
+    if (&rgb) {
+        avifRGBImageFreePixels(&rgb);
+    }
     if (!self->first_frame) {
         avifImageDestroy(frame);
     }
