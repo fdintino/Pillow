@@ -507,6 +507,8 @@ _encoder_add(AvifEncoderObject *self, PyObject *args) {
     } else {
         frame = avifImageCreateEmpty();
 
+        frame->width = width;
+        frame->height = height;
         frame->colorPrimaries = image->colorPrimaries;
         frame->transferCharacteristics = image->transferCharacteristics;
         frame->matrixCoefficients = image->matrixCoefficients;
@@ -517,9 +519,6 @@ _encoder_add(AvifEncoderObject *self, PyObject *args) {
         frame->alphaPremultiplied = image->alphaPremultiplied;
 #endif
     }
-
-    frame->width = width;
-    frame->height = height;
 
     memset(&rgb, 0, sizeof(avifRGBImage));
 
