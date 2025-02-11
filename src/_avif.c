@@ -319,6 +319,11 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
 #endif
 
     encoder = avifEncoderCreate();
+    if (!encoder) {
+        PyErr_SetString(PyExc_MemoryError, "Can't allocate encoder");
+        avifImageDestroy(image);
+        return NULL;
+    }
 
     int is_aom_encode = strcmp(codec, "aom") == 0 ||
                         (strcmp(codec, "auto") == 0 &&
@@ -669,6 +674,12 @@ AvifDecoderNew(PyObject *self_, PyObject *args) {
     }
 
     decoder = avifDecoderCreate();
+    if (!decoder) {
+        PyErr_SetString(PyExc_MemoryError, "Can't allocate decoder");
+        PyBuffer_Release(&buffer);
+        PyObject_Del(self);
+        return NULL;
+    }
 #if AVIF_VERSION >= 80400
     decoder->maxThreads = max_threads;
 #endif
