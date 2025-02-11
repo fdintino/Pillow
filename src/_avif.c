@@ -349,11 +349,16 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
     }
     encoder->speed = speed;
     encoder->timescale = (uint64_t)1000;
-    encoder->tileRowsLog2 = normalize_tiles_log2(tile_rows_log2);
-    encoder->tileColsLog2 = normalize_tiles_log2(tile_cols_log2);
 
 #if AVIF_VERSION >= 110000
     encoder->autoTiling = autotiling ? AVIF_TRUE : AVIF_FALSE;
+    if (!autotiling) {
+        encoder->tileRowsLog2 = normalize_tiles_log2(tile_rows_log2);
+        encoder->tileColsLog2 = normalize_tiles_log2(tile_cols_log2);
+    }
+#else
+    encoder->tileRowsLog2 = normalize_tiles_log2(tile_rows_log2);
+    encoder->tileColsLog2 = normalize_tiles_log2(tile_cols_log2);
 #endif
 
     if (advanced != Py_None) {

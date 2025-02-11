@@ -1388,7 +1388,8 @@ The :py:meth:`~PIL.Image.Image.save` method supports the following options:
 
 **tile_rows** / **tile_cols**
     For tile encoding, the (log 2) number of tile rows and columns to use.
-    Valid values are 0-6, default 0.
+    Valid values are 0-6, default 0. Ignored if "autotiling" is set to true in libavif
+    version **0.11.0** or greater.
 
 **autotiling**
     Split the image up to allow parallelization. Enabled automatically if "tile_rows"
