@@ -520,8 +520,6 @@ _encoder_add(AvifEncoderObject *self, PyObject *args) {
 #endif
     }
 
-    memset(&rgb, 0, sizeof(avifRGBImage));
-
     avifRGBImageSetDefaults(&rgb, frame);
     rgb.depth = 8;
 
