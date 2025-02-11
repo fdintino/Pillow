@@ -747,7 +747,7 @@ _decoder_get_info(AvifDecoderObject *self) {
         image->width,
         image->height,
         decoder->imageCount,
-        decoder->alphaPresent == AVIF_TRUE ? "RGBA" : "RGB",
+        decoder->alphaPresent ? "RGBA" : "RGB",
         NULL == icc ? Py_None : icc,
         NULL == exif ? Py_None : exif,
         irot_imir_to_exif_orientation(image),
@@ -794,8 +794,7 @@ _decoder_get_frame(AvifDecoderObject *self, PyObject *args) {
     avifRGBImageSetDefaults(&rgb, image);
 
     rgb.depth = 8;
-    rgb.format =
-        decoder->alphaPresent == AVIF_TRUE ? AVIF_RGB_FORMAT_RGBA : AVIF_RGB_FORMAT_RGB;
+    rgb.format = decoder->alphaPresent ? AVIF_RGB_FORMAT_RGBA : AVIF_RGB_FORMAT_RGB;
 
     result = avifRGBImageAllocatePixels(&rgb);
     if (result != AVIF_RESULT_OK) {
