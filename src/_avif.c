@@ -239,8 +239,8 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
     Py_buffer icc_buffer;
     Py_buffer exif_buffer;
     Py_buffer xmp_buffer;
-    PyObject *alpha_premultiplied;
-    PyObject *autotiling;
+    int alpha_premultiplied;
+    int autotiling;
     int tile_rows_log2;
     int tile_cols_log2;
 
@@ -251,7 +251,7 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
 
     if (!PyArg_ParseTuple(
             args,
-            "(II)siiissiiOOy*y*iy*O",
+            "(II)siiissiippy*y*iy*O",
             &width,
             &height,
             &subsampling,
@@ -315,7 +315,7 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
 
     image->depth = 8;
 #if AVIF_VERSION >= 90000
-    image->alphaPremultiplied = alpha_premultiplied == Py_True ? AVIF_TRUE : AVIF_FALSE;
+    image->alphaPremultiplied = alpha_premultiplied ? AVIF_TRUE : AVIF_FALSE;
 #endif
 
     encoder = avifEncoderCreate();
@@ -348,7 +348,7 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
     encoder->tileColsLog2 = normalize_tiles_log2(tile_cols_log2);
 
 #if AVIF_VERSION >= 110000
-    encoder->autoTiling = autotiling == Py_True ? AVIF_TRUE : AVIF_FALSE;
+    encoder->autoTiling = autotiling ? AVIF_TRUE : AVIF_FALSE;
 #endif
 
     if (advanced != Py_None) {
