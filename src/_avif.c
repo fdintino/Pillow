@@ -275,6 +275,10 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
 
     // Create a new animation encoder and picture frame
     avifImage *image = avifImageCreateEmpty();
+    if (image == NULL) {
+        PyErr_SetString(PyExc_ValueError, "Image creation failed");
+        return NULL;
+    }
 
     // Set these in advance so any upcoming RGB -> YUV use the proper coefficients
     if (strcmp(range, "full") == 0) {
@@ -506,6 +510,10 @@ _encoder_add(AvifEncoderObject *self, PyObject *args) {
         frame = image;
     } else {
         frame = avifImageCreateEmpty();
+        if (image == NULL) {
+            PyErr_SetString(PyExc_ValueError, "Image creation failed");
+            return NULL;
+        }
 
         frame->width = width;
         frame->height = height;
