@@ -182,6 +182,7 @@ _encoder_codec_available(PyObject *self, PyObject *args) {
     return PyBool_FromLong(is_available);
 }
 
+#if AVIF_VERSION >= 80200
 static int
 _add_codec_specific_options(avifEncoder *encoder, PyObject *opts) {
     Py_ssize_t i, size;
@@ -223,6 +224,7 @@ _add_codec_specific_options(avifEncoder *encoder, PyObject *opts) {
     }
     return 0;
 }
+#endif
 
 // Encoder functions
 PyObject *
