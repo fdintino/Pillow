@@ -305,7 +305,7 @@ AvifEncoderNew(PyObject *self_, PyObject *args) {
     }
 
     // Validate canvas dimensions
-    if (width <= 0 || height <= 0) {
+    if (width == 0 || height == 0) {
         PyErr_SetString(PyExc_ValueError, "invalid canvas dimensions");
         avifImageDestroy(image);
         return NULL;

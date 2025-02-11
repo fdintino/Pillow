@@ -150,8 +150,6 @@ def _save(
     for ims in [im] + append_images:
         total += getattr(ims, "n_frames", 1)
 
-    is_single_frame = total == 1
-
     quality = info.get("quality", 75)
     if not isinstance(quality, int) or quality < 0 or quality > 100:
         msg = "Invalid quality setting"
@@ -231,6 +229,7 @@ def _save(
     frame_idx = 0
     frame_duration = 0
     cur_idx = im.tell()
+    is_single_frame = total == 1
     try:
         for ims in [im] + append_images:
             # Get # of frames in this image
