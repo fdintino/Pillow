@@ -1413,7 +1413,7 @@ The :py:meth:`~PIL.Image.Image.save` method supports the following options:
     The XMP data to include in the saved file.
 
 Saving sequences
-~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~
 
 When calling :py:meth:`~PIL.Image.Image.save` to write an AVIF file, by default
 only the first frame of a multiframe image will be saved. If the ``save_all``
