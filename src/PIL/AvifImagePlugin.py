@@ -4,7 +4,7 @@ import os
 from io import BytesIO
 from typing import IO
 
-from . import ExifTags, Image, ImageFile
+from . import ExifTags, Image, ImageFile, features
 
 try:
     from . import _avif
@@ -164,7 +164,6 @@ def _save(
     range_ = info.get("range", "full")
     tile_rows_log2 = info.get("tile_rows", 0)
     tile_cols_log2 = info.get("tile_cols", 0)
-    alpha_premultiplied = bool(info.get("alpha_premultiplied", False))
     autotiling = bool(info.get("autotiling", tile_rows_log2 == tile_cols_log2 == 0))
 
     icc_profile = info.get("icc_profile", im.info.get("icc_profile"))
@@ -214,7 +213,6 @@ def _save(
         range_,
         tile_rows_log2,
         tile_cols_log2,
-        alpha_premultiplied,
         autotiling,
         icc_profile or b"",
         exif or b"",
@@ -228,6 +226,17 @@ def _save(
     frame_duration = 0
     cur_idx = im.tell()
     is_single_frame = total == 1
+    supported_modes = {"RGB", "RGBA"}
+
+    try:
+        from packaging.version import parse as parse_version
+    except ImportError:
+        pass
+    else:
+        version = features.version_module("avif")
+        assert version is not None
+        if parse_version(version) > parse_version("0.9.0"):
+            supported_modes.add("RGBa")
     try:
         for ims in [im] + append_images:
             # Get # of frames in this image
@@ -239,7 +248,7 @@ def _save(
                 # Make sure image mode is supported
                 frame = ims
                 rawmode = ims.mode
-                if ims.mode not in {"RGB", "RGBA"}:
+                if ims.mode not in supported_modes:
                     rawmode = "RGBA" if ims.has_transparency_data else "RGB"
                     frame = ims.convert(rawmode)
 
