@@ -50,7 +50,7 @@ LIBWEBP_VERSION=1.5.0
 BZIP2_VERSION=1.0.8
 LIBXCB_VERSION=1.17.0
 BROTLI_VERSION=1.1.0
-LIBAVIF_VERSION=1.1.1
+LIBAVIF_VERSION=632b7eacdf428ec3a294808df08475fd49225b44
 
 function build_pkg_config {
     if [ -e pkg-config-stamp ]; then return; fi
@@ -120,8 +120,7 @@ function build_libavif {
             yum install -y perl-IPC-Cmd
         fi
     fi
-
-    local out_dir=$(fetch_unpack https://github.com/AOMediaCodec/libavif/archive/refs/tags/v$LIBAVIF_VERSION.tar.gz libavif-$LIBAVIF_VERSION.tar.gz)
+    local out_dir=$(fetch_unpack https://github.com/AOMediaCodec/libavif/archive/$LIBAVIF_VERSION.tar.gz libavif-$LIBAVIF_VERSION.tar.gz)
     (cd $out_dir \
         && cmake \
             -DCMAKE_INSTALL_PREFIX=$BUILD_PREFIX \

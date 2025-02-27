@@ -116,7 +116,7 @@ V = {
     "HARFBUZZ": "10.4.0",
     "JPEGTURBO": "3.1.0",
     "LCMS2": "2.17",
-    "LIBAVIF": "1.1.1",
+    "LIBAVIF": "632b7eacdf428ec3a294808df08475fd49225b44",
     "LIBIMAGEQUANT": "4.3.4",
     "LIBPNG": "1.6.47",
     "LIBWEBP": "1.5.0",
@@ -380,7 +380,7 @@ DEPS: dict[str, dict[str, Any]] = {
         "bins": [r"*.dll"],
     },
     "libavif": {
-        "url": f"https://github.com/AOMediaCodec/libavif/archive/v{V['LIBAVIF']}.zip",
+        "url": f"https://github.com/AOMediaCodec/libavif/archive/{V['LIBAVIF']}.zip",
         "filename": f"libavif-{V['LIBAVIF']}.zip",
         "license": "LICENSE",
         "build": [
