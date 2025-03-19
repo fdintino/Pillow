@@ -18,6 +18,7 @@ modules = {
     "littlecms2": ("PIL._imagingcms", "littlecms_version"),
     "webp": ("PIL._webp", "webpdecoder_version"),
     "avif": ("PIL._avif", "libavif_version"),
+    "avif_codecs": ("PIL._avif", "libavif_codec_versions"),
 }
 
 

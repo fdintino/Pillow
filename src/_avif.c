@@ -924,6 +924,12 @@ setup_module(PyObject *m) {
     PyDict_SetItemString(d, "libavif_version", v ? v : Py_None);
     Py_XDECREF(v);
 
+    char codecVersions[256];
+    avifCodecVersions(codecVersions);
+    v = PyUnicode_FromString(codecVersions);
+    PyDict_SetItemString(d, "libavif_codec_versions", v ? v : Py_None);
+    Py_XDECREF(v);
+
     return 0;
 }
 

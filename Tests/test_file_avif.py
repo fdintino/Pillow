@@ -96,6 +96,11 @@ class TestFileAvif:
         assert version is not None
         assert re.search(r"\d+\.\d+\.\d+$", version)
 
+    def test_codec_versions(self) -> None:
+        codec_versions = features.version_module("avif_codecs")
+        assert codec_versions is not None
+        assert re.search(r"\w+ \[(enc|dec|enc/dec)\]:v?\d+\.\d+\.\d+", codec_versions)
+
     def test_read(self) -> None:
         """
         Can we read an AVIF file without error?
