@@ -160,6 +160,10 @@ jobs:
           & python.exe winbuild\build_prepare.py -v --no-imagequant --architecture=${{ matrix.cibw_arch }}
         shell: pwsh
 
+      - name: Install rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        if: matrix.cibw_arch == 'AMD64'
+
       - name: Build wheels
         run: |
           setlocal EnableDelayedExpansion
