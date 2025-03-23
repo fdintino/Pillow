@@ -18,8 +18,6 @@ on:
       - "wheels/*"
       - "winbuild/build_prepare.py"
       - "winbuild/fribidi.cmake"
-    tags:
-      - "*"
   pull_request:
     paths:
       - ".ci/requirements-cibw.txt"
@@ -43,7 +41,7 @@ env:
 
 jobs:
   build-native-wheels:
-    if: github.event_name != 'schedule' || github.repository_owner == 'python-pillow'
+    if: github.repository_owner == 'python-pillow'
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
     strategy:
