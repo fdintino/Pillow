@@ -127,6 +127,11 @@ function build_libavif {
     fi
 
     local out_dir=$(fetch_unpack https://github.com/AOMediaCodec/libavif/archive/refs/tags/v$LIBAVIF_VERSION.tar.gz libavif-$LIBAVIF_VERSION.tar.gz)
+    if [[ -n "$IS_MACOS" ]]; then
+        local yuv=OFF
+    else
+        local yuv=LOCAL
+    fi
     (cd $out_dir \
         && cmake \
             -DCMAKE_INSTALL_PREFIX=$BUILD_PREFIX \
@@ -134,7 +139,7 @@ function build_libavif {
             -DCMAKE_BUILD_TYPE=Release \
             -DBUILD_SHARED_LIBS=OFF \
             -DAVIF_LIBSHARPYUV=LOCAL \
-            -DAVIF_LIBYUV=LOCAL \
+            -DAVIF_LIBYUV=$yuv \
             -DAVIF_CODEC_AOM=LOCAL \
             -DAVIF_CODEC_DAV1D=LOCAL \
             -DAVIF_CODEC_RAV1E=LOCAL \
